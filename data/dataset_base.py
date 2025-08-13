@@ -88,7 +88,7 @@ class PackedDataset(torch.utils.data.IterableDataset):
         else:
             self.get_flattened_position_ids = get_flattened_position_ids_extrapolate
 
-    def build_datasets(self, datasets_metainfo, data_status):
+    def build_datasets(self, datasets_metainfo, data_status, **kwargs):
         datasets = []
         is_mandatory = []
         grouped_weights = []
@@ -108,39 +108,45 @@ class PackedDataset(torch.utils.data.IterableDataset):
 
             assert 'dataset_names' in dataset_args.keys()
             dataset_names = dataset_args.pop('dataset_names')
-            dataset_args['data_dir_list'] = []
-            for item in dataset_names:
-                if self.local_rank == 0:
-                    print(f'Preparing Dataset {grouped_dataset_name}/{item}')
-                meta_info = DATASET_INFO[grouped_dataset_name][item]
-                dataset_args['data_dir_list'].append(meta_info['data_dir'])
+            
+            if grouped_dataset_name == 'dpo_image_gen':
+                meta_info = DATASET_INFO[grouped_dataset_name][dataset_names[0]]
+                dataset_args.update(meta_info)
 
-                if "parquet_info_path" in meta_info.keys():
-                    if 'parquet_info' not in dataset_args.keys():
-                        dataset_args['parquet_info'] = {}
-                    with open(meta_info['parquet_info_path'], 'r') as f:
-                        parquet_info = json.load(f)
-                    dataset_args['parquet_info'].update(parquet_info)
+            elif grouped_dataset_name == 'regional_reward':
+                meta_info = DATASET_INFO[grouped_dataset_name][dataset_names[0]]
+                dataset_args.update(meta_info)
 
-                if 'json_dir' in meta_info.keys():
-                    # parquet/tar with json
-                    if 'json_dir_list' not in dataset_args.keys():
-                        dataset_args['json_dir_list'] = [meta_info['json_dir']]
-                    else:
-                        dataset_args['json_dir_list'].append(meta_info['json_dir'])
+            else:
+                dataset_args['data_dir_list'] = []
+                for item in dataset_names:
+                    if self.local_rank == 0:
+                        print(f'Preparing Dataset {grouped_dataset_name}/{item}')
+                    meta_info = DATASET_INFO[grouped_dataset_name][item]
 
-                if 'jsonl_path' in meta_info.keys():
-                    # jsonl with jpeg
-                    if 'jsonl_path_list' not in dataset_args.keys():
-                        dataset_args['jsonl_path_list'] = [meta_info['jsonl_path']]
-                    else:
-                        dataset_args['jsonl_path_list'].append(meta_info['jsonl_path'])
+                    if 'data_dir' in meta_info:
+                        dataset_args['data_dir_list'].append(meta_info['data_dir'])
+
+                    if "parquet_info_path" in meta_info.keys():
+                        if 'parquet_info' not in dataset_args.keys():
+                            dataset_args['parquet_info'] = {}
+                        with open(meta_info['parquet_info_path'], 'r') as f:
+                            parquet_info = json.load(f)
+                        dataset_args['parquet_info'].update(parquet_info)
+
+                    if 'jsonl_path' in meta_info.keys():
+                        if 'jsonl_path_list' not in dataset_args.keys():
+                            dataset_args['jsonl_path_list'] = [meta_info['jsonl_path']]
+                        else:
+                            dataset_args['jsonl_path_list'].append(meta_info['jsonl_path'])
+
 
             resume_data_status = dataset_args.pop('resume_data_status', True)
             if data_status is not None and grouped_dataset_name in data_status.keys() and resume_data_status:
                 data_status_per_group = data_status[grouped_dataset_name]
             else:
                 data_status_per_group = None
+            
             dataset = DATASET_REGISTRY[grouped_dataset_name](
                 dataset_name=grouped_dataset_name,
                 tokenizer=self.tokenizer,
@@ -171,13 +177,15 @@ class PackedDataset(torch.utils.data.IterableDataset):
             packed_label_ids            = list(),
             ce_loss_indexes             = list(),
             ce_loss_weights             = list(),
-            vae_image_tensors           = list(), 
+            vae_image_tensors           = list(),
+            gt_image_tensors            = list(), # New field for good images
             packed_latent_position_ids  = list(),
             vae_latent_shapes           = list(), 
             packed_vae_token_indexes    = list(), 
             packed_timesteps            = list(), 
             mse_loss_indexes            = list(),
-            packed_vit_tokens           = list(), 
+            packed_vit_tokens           = list(),
+            regional_reward_maps        = list(),
             vit_token_seqlens           = list(),
             packed_vit_position_ids     = list(),
             packed_vit_token_indexes    = list(), 
@@ -200,8 +208,8 @@ class PackedDataset(torch.utils.data.IterableDataset):
             data['split_lens'] = sequence_status['split_lens'] + [pad_len]
             data['attn_modes'] = sequence_status['attn_modes'] + ['causal']
             data['sample_lens'] += [pad_len]
-
-        # if the model has a convnet vae (e.g., as visual tokenizer)
+        
+        # Collate bad images
         if len(sequence_status['vae_image_tensors']) > 0:
             image_tensors = sequence_status.pop('vae_image_tensors')
             image_sizes = [item.shape for item in image_tensors]
@@ -215,24 +223,32 @@ class PackedDataset(torch.utils.data.IterableDataset):
             data['packed_latent_position_ids'] = torch.cat(sequence_status['packed_latent_position_ids'], dim=0)
             data['packed_vae_token_indexes'] = torch.tensor(sequence_status['packed_vae_token_indexes'])
 
-        # if the model has a vit (e.g., as visual tokenizer)
+        # Collate good images (ground truth)
+        if len(sequence_status['gt_image_tensors']) > 0:
+            gt_image_tensors = sequence_status.pop('gt_image_tensors')
+            gt_image_sizes = [item.shape for item in gt_image_tensors]
+            max_gt_image_size = [max(item) for item in list(zip(*gt_image_sizes))]
+            padded_gt_images = torch.zeros(size=(len(gt_image_tensors), *max_gt_image_size))
+            for i, image_tensor in enumerate(gt_image_tensors):
+                padded_gt_images[i, :, :image_tensor.shape[1], :image_tensor.shape[2]] = image_tensor
+            data['padded_gt_images'] = padded_gt_images
+
         if len(sequence_status['packed_vit_tokens']) > 0:
             data['packed_vit_tokens'] = torch.cat(sequence_status['packed_vit_tokens'], dim=0)
             data['packed_vit_position_ids'] = torch.cat(sequence_status['packed_vit_position_ids'], dim=0)
             data['packed_vit_token_indexes'] = torch.tensor(sequence_status['packed_vit_token_indexes'])
             data['vit_token_seqlens'] = torch.tensor(sequence_status['vit_token_seqlens'])
 
-        # if the model is required to perform visual generation
         if len(sequence_status['packed_timesteps']) > 0:
             data['packed_timesteps'] = torch.tensor(sequence_status['packed_timesteps'])
             data['mse_loss_indexes'] = torch.tensor(sequence_status['mse_loss_indexes'])
 
-        # if the model is required to perform text generation
         if len(sequence_status['packed_label_ids']) > 0:
             data['packed_label_ids'] = torch.tensor(sequence_status['packed_label_ids'])
             data['ce_loss_indexes'] = torch.tensor(sequence_status['ce_loss_indexes'])
             data['ce_loss_weights'] = torch.tensor(sequence_status['ce_loss_weights'])
-
+        if len(sequence_status['regional_reward_maps']) > 0:
+            data['regional_reward_map'] = torch.stack(sequence_status['regional_reward_maps'], dim=0)
         return data
 
     def __iter__(self):
@@ -245,13 +261,14 @@ class PackedDataset(torch.utils.data.IterableDataset):
 
         buffer = []
         while True:
-            # Ensure at least one sample from each group
             if sequence_status['curr'] == 0:
                 for group_index, group_iter in enumerate(self.dataset_iters):
                     if self.is_mandatory[group_index]:
                         while True:
                             sample = next(group_iter)
-                            # if a sample is too long, skip it
+                            print(len(sample['sequence_plan']),"sequence_plan")
+                            print(sample['num_tokens'],"num_tokens")
+                            assert 0
                             num_tokens = sample['num_tokens'] + 2 * len(sample['sequence_plan'])
                             if num_tokens < self.max_num_tokens_per_sample:
                                 sequence_status = self.pack_sequence(sample, sequence_status)
@@ -259,13 +276,13 @@ class PackedDataset(torch.utils.data.IterableDataset):
                                 break
                             else:
                                 print(f"skip a sample with length {num_tokens}")
+
                                 continue
 
             if sequence_status['curr'] < self.prefer_buffer_before and len(buffer) > 0:
                 sample = buffer.pop(0)
                 sample_from_buffer = True
             else:
-                # sample normally across all groups
                 n = random.random()
                 group_index = 0
                 for i, cumprob in enumerate(group_cumprobs):
@@ -274,11 +291,16 @@ class PackedDataset(torch.utils.data.IterableDataset):
                         break
                 sample = next(self.dataset_iters[group_index])
                 sample_from_buffer = False
-
-            # if a sample is too long, skip it
+            # print(len(sample['sequence_plan'],"sequence_plan"))
+            # print(sample['num_tokens'],"num_tokens")
+            # assert 0
+            
             num_tokens = sample['num_tokens'] + 2 * len(sample['sequence_plan'])
             if num_tokens > self.max_num_tokens_per_sample:
                 print(f"skip a sample with length {num_tokens}")
+                # print(len(sample['sequence_plan'],"sequence_plan"))
+                # print(sample['num_tokens'],"num_tokens")
+                # assert 0
                 continue
 
             if sequence_status['curr'] + num_tokens > self.max_num_tokens:
@@ -304,9 +326,9 @@ class PackedDataset(torch.utils.data.IterableDataset):
                 batch_data_indexes = []
 
     def pack_sequence(self, sample, sequence_status):
-        image_tensor_list = sample['image_tensor_list']
-        text_ids_list = sample['text_ids_list']
-        sequence_plan = sample['sequence_plan']
+        image_tensor_list = sample.get('image_tensor_list', [])
+        text_ids_list = sample.get('text_ids_list', [])
+        sequence_plan = sample.get('sequence_plan', [])
 
         split_lens, attn_modes = list(), list()
         curr = sequence_status['curr']
@@ -320,13 +342,13 @@ class PackedDataset(torch.utils.data.IterableDataset):
 
             if item['type'] == 'text':
                 text_ids = text_ids_list.pop(0)
-                if item['enable_cfg'] == 1 and random.random() < self.data_config.text_cond_dropout_prob:
+                if item.get('enable_cfg', 0) == 1 and random.random() < self.data_config.text_cond_dropout_prob:
                     continue
 
                 shifted_text_ids = [self.bos_token_id] + text_ids
                 sequence_status['packed_text_ids'].extend(shifted_text_ids)
                 sequence_status['packed_text_indexes'].extend(range(curr, curr + len(shifted_text_ids)))
-                if item['loss'] == 1:
+                if item.get('loss', 0) == 1:
                     sequence_status['ce_loss_indexes'].extend(range(curr, curr + len(shifted_text_ids)))
                     sequence_status['ce_loss_weights'].extend(
                         [len2weight(len(shifted_text_ids))] * len(shifted_text_ids)
@@ -335,34 +357,30 @@ class PackedDataset(torch.utils.data.IterableDataset):
                 curr += len(shifted_text_ids)
                 curr_split_len += len(shifted_text_ids)
 
-                # add a <|im_end|> token
                 sequence_status['packed_text_ids'].append(self.eos_token_id)
                 sequence_status['packed_text_indexes'].append(curr)
-                if item['special_token_loss'] == 1: # <|im_end|> may have loss
+                if item.get('special_token_loss', 0) == 1:
                     sequence_status['ce_loss_indexes'].append(curr)
                     sequence_status['ce_loss_weights'].append(1.0)
-                    sequence_status['packed_label_ids'].append(item['special_token_label'])
+                    sequence_status['packed_label_ids'].append(item.get('special_token_label'))
                 curr += 1
                 curr_split_len += 1
 
-                # update sequence status
                 attn_modes.append("causal")
                 sequence_status['packed_position_ids'].extend(range(curr_rope_id, curr_rope_id + curr_split_len))
                 curr_rope_id += curr_split_len
 
             elif item['type'] == 'vit_image':
                 image_tensor = image_tensor_list.pop(0)
-                if item['enable_cfg'] == 1 and random.random() < self.data_config.vit_cond_dropout_prob:
+                if item.get('enable_cfg', 0) == 1 and random.random() < self.data_config.vit_cond_dropout_prob:
                     curr_rope_id += 1
                     continue
 
-                # add a <|startofimage|> token
                 sequence_status['packed_text_ids'].append(self.start_of_image)
                 sequence_status['packed_text_indexes'].append(curr)
                 curr += 1
                 curr_split_len += 1
 
-                # preprocess image
                 vit_tokens = patchify(image_tensor, self.data_config.vit_patch_size)
                 num_img_tokens = vit_tokens.shape[0]
                 sequence_status['packed_vit_token_indexes'].extend(range(curr, curr + num_img_tokens))
@@ -379,35 +397,30 @@ class PackedDataset(torch.utils.data.IterableDataset):
                     )
                 )
 
-                # add a <|endofimage|> token
                 sequence_status['packed_text_ids'].append(self.end_of_image)
                 sequence_status['packed_text_indexes'].append(curr)
-                if item['special_token_loss'] == 1: # <|endofimage|> may have loss
+                if item.get('special_token_loss', 0) == 1:
                     sequence_status['ce_loss_indexes'].append(curr)
                     sequence_status['ce_loss_weights'].append(1.0)
-                    sequence_status['packed_label_ids'].append(item['special_token_label'])
+                    sequence_status['packed_label_ids'].append(item.get('special_token_label'))
                 curr += 1
                 curr_split_len += 1
 
-                # update sequence status
                 attn_modes.append("full")
                 sequence_status['packed_position_ids'].extend([curr_rope_id] * curr_split_len)
                 curr_rope_id += 1
 
             elif item['type'] == 'vae_image':
                 image_tensor = image_tensor_list.pop(0)
-                if item['enable_cfg'] == 1 and random.random() < self.data_config.vae_cond_dropout_prob:
-                    # FIXME fix vae dropout in video2video setting.
+                if item.get('enable_cfg', 0) == 1 and random.random() < self.data_config.vae_cond_dropout_prob:
                     curr_rope_id += 1
                     continue
 
-                # add a <|startofimage|> token
                 sequence_status['packed_text_ids'].append(self.start_of_image)
                 sequence_status['packed_text_indexes'].append(curr)
                 curr += 1
                 curr_split_len += 1
 
-                # preprocess image
                 sequence_status['vae_image_tensors'].append(image_tensor)
                 sequence_status['packed_latent_position_ids'].append(
                     self.get_flattened_position_ids(
@@ -423,7 +436,7 @@ class PackedDataset(torch.utils.data.IterableDataset):
 
                 num_img_tokens = w * h
                 sequence_status['packed_vae_token_indexes'].extend(range(curr, curr + num_img_tokens))
-                if item['loss'] == 1:
+                if item.get('loss', 0) == 1:
                     sequence_status['mse_loss_indexes'].extend(range(curr, curr + num_img_tokens))
                     if split_start:
                         timestep = np.random.randn()
@@ -434,27 +447,24 @@ class PackedDataset(torch.utils.data.IterableDataset):
                 curr += num_img_tokens
                 curr_split_len += num_img_tokens
 
-                # add a <|endofimage|> token
                 sequence_status['packed_text_ids'].append(self.end_of_image)
                 sequence_status['packed_text_indexes'].append(curr)
-                # <|endofimage|> may have loss
-                if item['special_token_loss'] == 1:
+                if item.get('special_token_loss', 0) == 1:
                     sequence_status['ce_loss_indexes'].append(curr)
                     sequence_status['ce_loss_weights'].append(1.0)
-                    sequence_status['packed_label_ids'].append(item['special_token_label'])
+                    sequence_status['packed_label_ids'].append(item.get('special_token_label'))
                 curr += 1
                 curr_split_len += 1
 
-                # update sequence status
                 if split_start:
-                    if item['loss'] == 1 and 'frame_delta' not in item.keys():
+                    if item.get('loss', 0) == 1 and 'frame_delta' not in item.keys():
                         attn_modes.append("noise")
                     else:
                         attn_modes.append("full")
                 sequence_status['packed_position_ids'].extend([curr_rope_id] * (num_img_tokens + 2))
                 if 'frame_delta' in item.keys():
                     curr_rope_id += item['frame_delta']
-                elif item['loss'] == 0:
+                elif item.get('loss', 0) == 0:
                     curr_rope_id += 1
 
             if item.get('split_end', True):
@@ -463,7 +473,6 @@ class PackedDataset(torch.utils.data.IterableDataset):
 
         sequence_status['curr'] = curr
         sequence_status['sample_lens'].append(sample_lens)
-        # prepare attention mask
         if not self.use_flex:
             sequence_status['nested_attention_masks'].append(
                 prepare_attention_mask_per_sample(split_lens, attn_modes)
@@ -472,6 +481,12 @@ class PackedDataset(torch.utils.data.IterableDataset):
             sequence_status['split_lens'].extend(split_lens)
             sequence_status['attn_modes'].extend(attn_modes)
 
+        if 'dpo_info' in sample:
+            sequence_status['dpo_info'] = sample['dpo_info']
+        if 'regional_reward_map' in sample:
+            sequence_status['regional_reward_maps'].append(sample['regional_reward_map'])
+        if 'gt_image_tensor' in sample:
+            sequence_status['gt_image_tensors'].append(sample['gt_image_tensor'])
         return sequence_status
 
 
@@ -484,7 +499,10 @@ class SimpleCustomBatch:
         self.packed_text_ids = data["packed_text_ids"]
         self.packed_text_indexes = data["packed_text_indexes"]
         self.packed_position_ids = data["packed_position_ids"]
-
+        if "regional_reward_map" in data:
+            self.regional_reward_map = data["regional_reward_map"]
+        if "dpo_info" in data.keys():
+            self.dpo_info = data['dpo_info']
         self.use_flex = "nested_attention_masks" not in data.keys()
 
         if self.use_flex:
@@ -498,6 +516,9 @@ class SimpleCustomBatch:
             self.patchified_vae_latent_shapes = data["patchified_vae_latent_shapes"]
             self.packed_latent_position_ids = data["packed_latent_position_ids"]
             self.packed_vae_token_indexes = data["packed_vae_token_indexes"]
+        
+        if "padded_gt_images" in data.keys():
+            self.padded_gt_images = data["padded_gt_images"]
 
         if "packed_vit_tokens" in data.keys():
             self.packed_vit_tokens = data["packed_vit_tokens"]
@@ -518,6 +539,8 @@ class SimpleCustomBatch:
         self.packed_text_ids = self.packed_text_ids.pin_memory()
         self.packed_text_indexes = self.packed_text_indexes.pin_memory()
         self.packed_position_ids = self.packed_position_ids.pin_memory()
+        if hasattr(self, 'regional_reward_map'):
+            self.regional_reward_map = self.regional_reward_map.pin_memory()
 
         if not self.use_flex:
             self.nested_attention_masks = [item.pin_memory() for item in self.nested_attention_masks]
@@ -526,6 +549,9 @@ class SimpleCustomBatch:
             self.padded_images = self.padded_images.pin_memory()
             self.packed_vae_token_indexes = self.packed_vae_token_indexes.pin_memory()
             self.packed_latent_position_ids = self.packed_latent_position_ids.pin_memory()
+            
+        if hasattr(self, 'padded_gt_images'):
+            self.padded_gt_images = self.padded_gt_images.pin_memory()
 
         if hasattr(self, 'packed_timesteps'):
             self.packed_timesteps = self.packed_timesteps.pin_memory()
@@ -556,6 +582,9 @@ class SimpleCustomBatch:
             self.padded_images = self.padded_images.to(device)
             self.packed_vae_token_indexes = self.packed_vae_token_indexes.to(device)
             self.packed_latent_position_ids = self.packed_latent_position_ids.to(device)
+        
+        if hasattr(self, 'padded_gt_images'):
+            self.padded_gt_images = self.padded_gt_images.to(device)
 
         if hasattr(self, 'packed_timesteps'):
             self.packed_timesteps = self.packed_timesteps.to(device)
@@ -571,7 +600,10 @@ class SimpleCustomBatch:
             self.packed_label_ids = self.packed_label_ids.to(device)
             self.ce_loss_indexes = self.ce_loss_indexes.to(device)
             self.ce_loss_weights = self.ce_loss_weights.to(device)
-
+            
+        if hasattr(self, 'regional_reward_map'):
+            self.regional_reward_map = self.regional_reward_map.to(device)
+        
         return self
 
     def to_dict(self):
@@ -583,7 +615,8 @@ class SimpleCustomBatch:
             packed_position_ids = self.packed_position_ids,
             batch_data_indexes = self.batch_data_indexes,
         )
-
+        if hasattr(self, 'dpo_info'):
+            data['dpo_info'] = self.dpo_info
         if not self.use_flex:
             data['nested_attention_masks'] = self.nested_attention_masks
         else:
@@ -595,6 +628,9 @@ class SimpleCustomBatch:
             data['patchified_vae_latent_shapes'] = self.patchified_vae_latent_shapes
             data['packed_latent_position_ids'] = self.packed_latent_position_ids
             data['packed_vae_token_indexes'] = self.packed_vae_token_indexes
+            
+        if hasattr(self, 'padded_gt_images'):
+            data['padded_gt_images'] = self.padded_gt_images
 
         if hasattr(self, 'packed_vit_tokens'):
             data['packed_vit_tokens'] = self.packed_vit_tokens
@@ -610,7 +646,9 @@ class SimpleCustomBatch:
             data['packed_label_ids'] = self.packed_label_ids
             data['ce_loss_indexes'] = self.ce_loss_indexes
             data['ce_loss_weights'] = self.ce_loss_weights
-
+            
+        if hasattr(self, 'regional_reward_map'):
+            data['regional_reward_map'] = self.regional_reward_map
         return data
 
 

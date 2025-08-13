@@ -37,6 +37,9 @@ class BagelConfig(PretrainedConfig):
         connector_act="gelu_pytorch_tanh",
         interpolate_pos=False,
         timestep_shift=1.0,
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<< NEW START <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        lambda_constraint=0.1,  # Add parameter with a default value
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<< NEW END <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -51,7 +54,7 @@ class BagelConfig(PretrainedConfig):
         self.connector_act = connector_act
         self.interpolate_pos = interpolate_pos
         self.timestep_shift = timestep_shift
-
+        self.lambda_constraint = lambda_constraint
 
 class Bagel(PreTrainedModel):
     config_class = BagelConfig
@@ -116,11 +119,14 @@ class Bagel(PreTrainedModel):
         vit_token_seqlens: Optional[torch.IntTensor] = None,
         # for visual generation
         padded_latent: Optional[torch.Tensor] = None,
+        packed_latent_clean_gt: Optional[torch.Tensor] = None,
         patchified_vae_latent_shapes: Optional[List[Tuple[int, int]]] = None,
         packed_latent_position_ids: Optional[torch.LongTensor] = None,
         packed_vae_token_indexes: Optional[torch.LongTensor] = None,
         packed_timesteps: Optional[torch.LongTensor] = None,
         mse_loss_indexes: Optional[torch.BoolTensor] = None,
+        # === 新增参数 ===
+        regional_reward_map: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
         Args:
@@ -179,21 +185,41 @@ class Bagel(PreTrainedModel):
 
         if self.config.visual_gen:
             p = self.latent_patch_size
-            packed_latent = []
+            
+            # 1. Unpack latents from BAD images (these will be noised for input)
+            packed_latent_from_bad_images_list = []
             for latent, (h, w) in zip(padded_latent, patchified_vae_latent_shapes):
                 latent = latent[:, :h * p, :w * p].reshape(self.latent_channel, h, p, w, p)
                 latent = torch.einsum("chpwq->hwpqc", latent).reshape(-1, p * p * self.latent_channel)
-                packed_latent.append(latent)
-            packed_latent_clean = torch.cat(packed_latent, dim=0)
+                packed_latent_from_bad_images_list.append(latent)
+            packed_latent_from_bad_images = torch.cat(packed_latent_from_bad_images_list, dim=0)
 
-            noise = torch.randn_like(packed_latent_clean)
+            # 2. Determine the clean target latents (x_0)
+            if packed_latent_clean_gt is not None:
+                # Target is the GOOD image's latent
+                packed_latent_clean_target_list = []
+                for latent, (h, w) in zip(packed_latent_clean_gt, patchified_vae_latent_shapes):
+                    latent = latent[:, :h * p, :w * p].reshape(self.latent_channel, h, p, w, p)
+                    latent = torch.einsum("chpwq->hwpqc", latent).reshape(-1, p * p * self.latent_channel)
+                    packed_latent_clean_target_list.append(latent)
+                packed_latent_clean = torch.cat(packed_latent_clean_target_list, dim=0)
+            else:
+                # Fallback: Target is the BAD image itself (original behavior)
+                packed_latent_clean = packed_latent_from_bad_images
+
+            # 3. Create the noisy input x_t from the BAD image's latent
+            noise = torch.randn_like(packed_latent_from_bad_images)
             packed_timesteps = torch.sigmoid(packed_timesteps)
             packed_timesteps = self.timestep_shift * packed_timesteps / (1 + (self.timestep_shift - 1) * packed_timesteps)
-            packed_latent = (1 - packed_timesteps[:, None]) * packed_latent_clean + packed_timesteps[:, None] * noise
+            
+            # The model's input is a noisy version of the BAD image's latent
+            packed_latent_input = (1 - packed_timesteps[:, None]) * packed_latent_from_bad_images + packed_timesteps[:, None] * noise
+            
+            # 4. Embed the noisy input and place it in the sequence
             packed_timestep_embeds = self.time_embedder(packed_timesteps)
             latent_token_pos_emb = self.latent_pos_embed(packed_latent_position_ids)
-            packed_latent = self.vae2llm(packed_latent) + packed_timestep_embeds + latent_token_pos_emb
-            packed_sequence[packed_vae_token_indexes] = packed_latent
+            packed_latent_input = self.vae2llm(packed_latent_input) + packed_timestep_embeds + latent_token_pos_emb
+            packed_sequence[packed_vae_token_indexes] = packed_latent_input
 
         extra_inputs = {}
         if self.use_moe:
@@ -213,12 +239,62 @@ class Bagel(PreTrainedModel):
             **extra_inputs,
         )
 
+        # === START: NEW LOSS CALCULATION BASED ON USER'S FINAL DESIGN ===
         mse = None
         if self.config.visual_gen:
-            packed_mse_preds = self.llm2vae(last_hidden_state[mse_loss_indexes])
-            target = noise - packed_latent_clean # NOTE: v_t=dx_t/dt=x_1-x_0, pointing from data to noise
+            # Model's predicted velocity
+            v_theta = self.llm2vae(last_hidden_state[mse_loss_indexes])
+            
             has_mse = packed_timesteps > 0
-            mse = (packed_mse_preds - target[has_mse]) ** 2
+            # print(packed_latent_clean.size())
+            # print(noise.size(),"noise")
+            # assert 0
+            # If no reward map, fall back to simple MSE against GT
+            if regional_reward_map is None:
+                target_gt = noise - packed_latent_clean
+                mse_per_token_gt = (v_theta - target_gt[has_mse]) ** 2
+                mse = mse_per_token_gt.mean()
+            else:
+                # --- Loss Component 1: GT Constraint (KL-like) ---
+                # Target velocity towards the GT image (anchor)
+                target_gt = noise - packed_latent_clean
+                mse_constraint = (v_theta - target_gt[has_mse]) ** 2
+                
+                # --- Loss Component 2: Reward-Driven Objective ---
+                # Target velocity towards the bad image (for preservation/repulsion)
+                target_bad = noise - packed_latent_from_bad_images
+                mse_reward = (v_theta - target_bad[has_mse]) ** 2
+                
+                # Interpolate reward map to match latent token dimensions
+                all_reward_values = []
+                for i, (h, w) in enumerate(patchified_vae_latent_shapes):
+                    reward_map_single = regional_reward_map[i]
+                    reward_values_latent = F.interpolate(
+                        reward_map_single.unsqueeze(0).unsqueeze(0), 
+                        size=(h, w), 
+                        mode='bilinear', 
+                        align_corners=False
+                    ).squeeze()
+                    all_reward_values.append(reward_values_latent.reshape(-1))
+
+                # Reward map R, assumed to be in [-1, 1]
+                rewards = torch.cat(all_reward_values, dim=0).to(v_theta.device)
+                rewards_filtered = rewards[has_mse] 
+                
+                # The reward-driven loss term
+                # R > 0: preserve bad_image content (minimize mse_reward)
+                # R < 0: repel from bad_image content (maximize mse_reward)
+                loss_reward = (rewards_filtered.unsqueeze(1) * mse_reward).mean()
+
+                # The GT constraint loss term
+                loss_constraint = mse_constraint.mean()
+                # print(loss_reward,"loss_reward")
+                # print(loss_constraint,"loss_constraint")
+                # Combine the two loss components
+                mse = loss_reward + self.config.lambda_constraint * loss_constraint
+                # print(mse,"mse")
+        # === END: NEW LOSS CALCULATION ===
+
 
         ce = None
         if ce_loss_indexes is not None:

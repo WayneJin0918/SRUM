@@ -1,0 +1,10 @@
+regional_reward:
+  dataset_names:
+  - comp_data_0p5
+  image_transform_args:
+    image_stride: 256
+    max_image_size: 1024
+    min_image_size: 512
+  num_used_data: # The sum should be larger that NUM_GPUS x NUM_WORKERS
+  - 8
+  weight: 1

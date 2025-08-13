@@ -8,3 +8,12 @@ eval_results
 tests
 .DS_Store
 gradio.sh
+BAGEL-7B-MoT
+images*
+wise*
+mmdetction
+logs/*
+comp_eval/*
+T2I*
+results/*
+*.pth
