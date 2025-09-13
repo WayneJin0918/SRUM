@@ -6,152 +6,152 @@ from safetensors.torch import load_file, save_file
 from tqdm import tqdm
 import time
 import concurrent.futures
-import argparse # 导入 argparse 模块
+import argparse # Import the argparse module
 
-# --- 全局配置 (可根据需要调整) ---
+# --- Global Configuration (Adjust as needed) ---
 
-# 需要被转换为 bfloat16 的文件名
+# Filenames to be converted to bfloat16
 FILES_TO_CONVERT = {"model.safetensors", "ema.safetensors"}
 
-# 并行处理时使用的最大进程数 (None 表示使用所有可用的 CPU核心)
-MAX_WORKERS = None #可以设置为具体的数字，例如 4
+# Maximum number of processes to use for parallel processing (None means use all available CPU cores)
+MAX_WORKERS = None # Can be set to a specific number, e.g., 4
 
-# --- 工作函数 (用于并行处理) ---
+# --- Worker Function (for parallel processing) ---
 
 def convert_file_to_bf16(file_info):
     """
-    在单个进程中转换单个文件到 bfloat16 格式。
-    这是一个独立的函数，以便于并行化。
+    Converts a single file to bfloat16 format in a single process.
+    This is a standalone function to facilitate parallelization.
     
-    参数:
-        file_info (tuple): 包含 (filename, source_folder, target_folder) 的元组。
+    Args:
+        file_info (tuple): A tuple containing (filename, source_folder, target_folder).
         
-    返回:
-        str: 描述操作结果的消息。
+    Returns:
+        str: A message describing the result of the operation.
     """
     filename, source_folder, target_folder = file_info
     source_path = os.path.join(source_folder, filename)
     target_path = os.path.join(target_folder, filename)
     
     try:
-        # 加载权重文件到 CPU，避免占用 GPU 显存
+        # Load the weights file to the CPU to avoid using GPU memory
         tensors = load_file(source_path, device="cpu")
         tensors_bf16 = {}
         
-        # 使用 tqdm 显示单个文件内部张量的转换进度
-        # leave=False 表示完成后进度条会消失
-        item_iterator = tqdm(tensors.items(), desc=f"  -> 转换 '{filename}'", leave=False, position=1)
+        # Use tqdm to show the conversion progress of tensors within a single file
+        # leave=False means the progress bar will disappear upon completion
+        item_iterator = tqdm(tensors.items(), desc=f"   -> Converting '{filename}'", leave=False, position=1)
         for k, v in item_iterator:
-            # 将张量转换为 bfloat16 类型
+            # Convert the tensor to bfloat16 type
             tensors_bf16[k] = v.to(torch.bfloat16)
         
-        # 保存转换后的文件
+        # Save the converted file
         save_file(tensors_bf16, target_path)
-        return f"✅ [子进程] 成功转换并保存: '{target_path}'"
+        return f"✅ [Subprocess] Successfully converted and saved: '{target_path}'"
         
     except Exception as e:
-        return f"❌ [子进程] 处理 '{filename}' 时发生错误: {e}"
+        return f"❌ [Subprocess] Error processing '{filename}': {e}"
 
 
-# --- 主脚本 ---
+# --- Main Script ---
 
 def main(source_folder, master_model_folder, target_folder):
     """
-    执行模型转换和权重补全全流程的主函数。
+    The main function that executes the entire model conversion and weight completion process.
     
-    参数:
-        source_folder (str): 包含原始检查点的源文件夹路径。
-        master_model_folder (str): 包含主模型配置、分词器等的文件夹路径。
-        target_folder (str): 用于存放处理后文件的目标文件夹路径。
+    Args:
+        source_folder (str): Path to the source folder containing the original checkpoints.
+        master_model_folder (str): Path to the folder containing the master model's configuration, tokenizer, etc.
+        target_folder (str): Path to the target folder for storing the processed files.
     """
     start_time = time.time()
-    print("🚀 开始执行模型处理脚本 (并行加速版)...")
-    print(f"源检查点文件夹: {source_folder}")
-    print(f"源主模型文件夹: {master_model_folder}")
-    print(f"目标文件夹: {target_folder}")
+    print("🚀 Starting the model processing script (parallel accelerated version)...")
+    print(f"Source checkpoint folder: {source_folder}")
+    print(f"Source master model folder: {master_model_folder}")
+    print(f"Target folder: {target_folder}")
     print("-" * 60)
 
-    # 确保目标文件夹存在，如果不存在则创建
+    # Ensure the target folder exists, create it if it doesn't
     os.makedirs(target_folder, exist_ok=True)
     
-    # 根据传入的 master_model_folder 动态构建 master_ema_path
+    # Dynamically construct master_ema_path based on the provided master_model_folder
     master_ema_path = os.path.join(master_model_folder, "ema.safetensors")
 
 
-    # --- 步骤 1: 复制配置文件和分词器等非权重文件 ---
-    print("\n--- 步骤 1: 复制非权重文件 (如 config, tokenizer) ---")
+    # --- Step 1: Copy non-weight files (e.g., config, tokenizer) ---
+    print("\n--- Step 1: Copying non-weight files (e.g., config, tokenizer) ---")
     try:
         master_model_files = os.listdir(master_model_folder)
         
-        # 使用 tqdm 显示文件复制进度
-        copy_iterator = tqdm(master_model_files, desc="复制非权重文件")
+        # Use tqdm to show file copy progress
+        copy_iterator = tqdm(master_model_files, desc="Copying non-weight files")
         
         copied_count = 0
         for filename in copy_iterator:
-            # 跳过所有权重文件，只复制其他类型文件
+            # Skip all weight files, only copy other file types
             if filename.endswith('ema.safetensors'):
                 continue
 
             src_path = os.path.join(master_model_folder, filename)
             dst_path = os.path.join(target_folder, filename)
             
-            # 确保我们正在复制的是文件，而不是子目录
+            # Ensure we are copying a file, not a subdirectory
             if os.path.isfile(src_path):
                 shutil.copy2(src_path, dst_path)
                 copied_count += 1
         
-        print(f"✅ 成功复制 {copied_count} 个非权重文件到 '{target_folder}'")
+        print(f"✅ Successfully copied {copied_count} non-weight files to '{target_folder}'")
 
     except FileNotFoundError:
-        print(f"❌ 错误: Master 模型文件夹不存在: {master_model_folder}")
+        print(f"❌ Error: Master model folder not found: {master_model_folder}")
     except Exception as e:
-        print(f"❌ 在复制文件时发生错误: {e}")
+        print(f"❌ An error occurred while copying files: {e}")
 
-    print("\n--- 步骤 1 完成 ---")
+    print("\n--- Step 1 Complete ---")
     print("-" * 60)
 
 
-    # --- 步骤 2: 并行将指定文件转换为 bfloat16 格式 ---
-    print("\n--- 步骤 2: 并行转换权重文件到 bfloat16 ---")
+    # --- Step 2: Convert specified files to bfloat16 format in parallel ---
+    print("\n--- Step 2: Parallel conversion of weight files to bfloat16 ---")
     
     try:
         all_source_files = os.listdir(source_folder)
     except FileNotFoundError:
-        print(f"❌ 错误: 源检查点文件夹不存在: {source_folder}")
+        print(f"❌ Error: Source checkpoint folder not found: {source_folder}")
         return
 
-    # 筛选出需要转换的文件
+    # Filter out the files that need conversion
     files_to_process = [f for f in all_source_files if f in FILES_TO_CONVERT]
     
     if not files_to_process:
-        print("🟡 在源检查点文件夹中未找到需要转换的权重文件。")
+        print("🟡 No weight files to convert were found in the source checkpoint folder.")
     else:
         tasks = [(filename, source_folder, target_folder) for filename in files_to_process]
-        print(f"📨 将 {len(tasks)} 个权重文件转换任务提交到进程池...")
+        print(f"📨 Submitting {len(tasks)} weight file conversion tasks to the process pool...")
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            results = list(tqdm(executor.map(convert_file_to_bf16, tasks), total=len(tasks), desc="并行转换进度"))
+            results = list(tqdm(executor.map(convert_file_to_bf16, tasks), total=len(tasks), desc="Parallel Conversion Progress"))
         
-        print("\n--- 并行转换结果 ---")
+        print("\n--- Parallel Conversion Results ---")
         for res in results:
             print(res)
         print("----------------------")
 
-    print("\n--- 步骤 2 完成 ---")
+    print("\n--- Step 2 Complete ---")
     print("-" * 60)
 
-    # --- 步骤 3: 为 model.safetensors 补全缺失的权重 ---
-    print("\n--- 步骤 3: 为 model.safetensors 补全缺失的权重 ---")
+    # --- Step 3: Complete missing weights for model.safetensors ---
+    print("\n--- Step 3: Completing missing weights for model.safetensors ---")
     
     target_model_path = os.path.join(target_folder, "model.safetensors")
     
     if not os.path.exists(target_model_path):
-        print(f"⚠️  警告: 目标模型 '{target_model_path}' 不存在。跳过权重补全步骤。")
+        print(f"⚠️  Warning: Target model '{target_model_path}' not found. Skipping weight completion step.")
     elif not os.path.exists(master_ema_path):
-        print(f"⚠️  警告: 权重来源 (Master) '{master_ema_path}' 不存在。跳过权重补全步骤。")
+        print(f"⚠️  Warning: Weight source (Master) '{master_ema_path}' not found. Skipping weight completion step.")
     else:
         try:
-            print("正在加载 Master 模型和目标模型...")
+            print("Loading Master model and Target model...")
             master_ema_tensors = load_file(master_ema_path, device="cpu")
             target_model_tensors = load_file(target_model_path, device="cpu")
 
@@ -161,70 +161,70 @@ def main(source_folder, master_model_folder, target_folder):
             missing_keys = master_keys - target_keys
 
             if not missing_keys:
-                print("✅ 'model.safetensors' 中的权重是完整的，无需补全。")
+                print("✅ Weights in 'model.safetensors' are complete, no completion needed.")
             else:
-                print(f"🟡 发现 {len(missing_keys)} 个缺失的权重，现在开始补全...")
+                print(f"🟡 Found {len(missing_keys)} missing weights, starting completion...")
                 
                 merged_tensors = target_model_tensors.copy()
 
-                key_iterator = tqdm(sorted(list(missing_keys)), desc="  -> 补全缺失的权重")
+                key_iterator = tqdm(sorted(list(missing_keys)), desc="   -> Completing missing weights")
                 for key in key_iterator:
                     merged_tensors[key] = master_ema_tensors[key].to(torch.bfloat16)
                 
-                print(f"💾 正在保存补全后的模型，总权重数: {len(merged_tensors)}...")
+                print(f"💾 Saving the completed model, total weights: {len(merged_tensors)}...")
                 save_file(merged_tensors, target_model_path)
-                print(f"✅ 成功补全并保存至: '{target_model_path}'")
+                print(f"✅ Successfully completed and saved to: '{target_model_path}'")
 
         except Exception as e:
-            print(f"❌ 在权重补全过程中发生错误: {e}")
+            print(f"❌ An error occurred during weight completion: {e}")
 
-    print("\n--- 步骤 3 完成 ---")
+    print("\n--- Step 3 Complete ---")
     print("-" * 60)
 
     end_time = time.time()
-    print(f"🎉 所有任务已完成，总耗时: {end_time - start_time:.2f} 秒。")
+    print(f"🎉 All tasks completed. Total time taken: {end_time - start_time:.2f} seconds.")
     
     flag_path = os.path.join(target_folder, "processing_complete.txt")
     with open(flag_path, "w", encoding="utf-8") as f:
-        f.write(f"处理完成于: {time.ctime()}.\n")
-        f.write("已复制所有非权重文件。\n")
-        f.write(f"已将 {FILES_TO_CONVERT} 转换为 bfloat16 格式。\n")
-        f.write("已使用 Master EMA 模型补全了 model.safetensors 的权重。\n")
-    print(f"📄 已创建标记文件: '{flag_path}'")
+        f.write(f"Processing completed at: {time.ctime()}.\n")
+        f.write("All non-weight files have been copied.\n")
+        f.write(f"Converted {FILES_TO_CONVERT} to bfloat16 format.\n")
+        f.write("Completed the weights for model.safetensors using the Master EMA model.\n")
+    print(f"📄 Flag file created: '{flag_path}'")
 
 
 if __name__ == "__main__":
-    # --- 命令行参数解析 ---
-    parser = argparse.ArgumentParser(description="将训练检查点转换为 Hugging Face 格式，并补全权重。")
+    # --- Command-Line Argument Parsing ---
+    parser = argparse.ArgumentParser(description="Convert training checkpoints to Hugging Face format and complete weights.")
     parser.add_argument(
         "--training_checkpoint_path",
         type=str,
         required=True,
-        help="包含原始检查点（如 model.safetensors）的源文件夹路径。"
+        help="Path to the source folder containing original checkpoints (e.g., model.safetensors)."
     )
     parser.add_argument(
         "--template_model_path",
         type=str,
         required=True,
-        help="包含主模型配置、分词器和完整 ema.safetensors 的文件夹路径。"
+        help="Path to the folder containing the master model's config, tokenizer, and complete ema.safetensors."
     )
     parser.add_argument(
         "--output_path",
         type=str,
         required=True,
-        help="用于存放处理后文件的目标文件夹路径。"
+        help="Path to the target folder for storing the processed files."
     )
     args = parser.parse_args()
 
-    # 在 Windows 或 macOS 上使用 'spawn' 或 'forkserver' 启动方式时，
-    # 必须将主逻辑代码放在 if __name__ == "__main__": 块内。
+    # When using 'spawn' or 'forkserver' start methods on Windows or macOS,
+    # the main logic must be placed inside the if __name__ == "__main__": block.
     try:
         torch.multiprocessing.set_start_method('spawn', force=True)
     except RuntimeError:
-        # 如果启动方法已经设置，则忽略错误
+        # If the start method is already set, ignore the error
         pass
         
-    # 使用从命令行解析的参数调用主函数
+    # Call the main function using arguments parsed from the command line
     main(
         source_folder=args.training_checkpoint_path,
         master_model_folder=args.template_model_path,

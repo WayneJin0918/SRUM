@@ -357,13 +357,13 @@ class TrainingArguments:
 
 def main():
     assert torch.cuda.is_available()
-    import datetime  # 需要导入 datetime 模块
-    
-    # 创建一个更长的超时时间，例如 2 小时
-    # 您可以根据实际需要调整
-    timeout_delta = datetime.timedelta(minutes=120) 
-    
-    # 在初始化进程组时传入 timeout 参数
+    import datetime  # Need to import the datetime module
+
+    # Create a longer timeout, e.g., 2 hours
+    # You can adjust this as needed
+    timeout_delta = datetime.timedelta(minutes=120)
+
+    # Pass the timeout parameter when initializing the process group
     dist.init_process_group("nccl", timeout=timeout_delta)
     device = dist.get_rank() % torch.cuda.device_count()
     torch.cuda.set_device(device)
@@ -376,11 +376,11 @@ def main():
         os.makedirs(training_args.checkpoint_dir, exist_ok=True)
         logger = create_logger(training_args.results_dir, dist.get_rank())
         # ==============================
-        # 以下 wandb 初始化全部注释
+        # All wandb initializations below are commented out
         # wandb.init(
-        #     project=training_args.wandb_project, 
-        #     id=f"{training_args.wandb_name}-run{training_args.wandb_runid}", 
-        #     name=training_args.wandb_name, 
+        #     project=training_args.wandb_project,
+        #     id=f"{training_args.wandb_name}-run{training_args.wandb_runid}",
+        #     name=training_args.wandb_name,
         #     resume=training_args.wandb_resume,
         #     mode="offline" if training_args.wandb_offline else "online"
         # )
@@ -436,7 +436,7 @@ def main():
     if training_args.copy_init_moe:
         language_model.init_moe()
 
-    if training_args.visual_und:  
+    if training_args.visual_und:
         if training_args.finetune_from_hf:
             vit_config = SiglipVisionConfig.from_json_file(os.path.join(model_args.model_path, "vit_config.json"))
         else:
@@ -450,14 +450,14 @@ def main():
 
     if training_args.visual_gen:
         vae_model, vae_config = load_ae(
-            local_path=os.path.join(model_args.model_path, "ae.safetensors") 
+            local_path=os.path.join(model_args.model_path, "ae.safetensors")
             if training_args.finetune_from_hf else model_args.vae_path
         )
 
     config = BagelConfig(
         visual_gen=training_args.visual_gen,
         visual_und=training_args.visual_und,
-        llm_config=llm_config, 
+        llm_config=llm_config,
         vit_config=vit_config if training_args.visual_und else None,
         vae_config=vae_config if training_args.visual_gen else None,
         latent_patch_size=model_args.latent_patch_size,
@@ -469,8 +469,8 @@ def main():
         lambda_constraint=training_args.lambda_constraint,
     )
     model = Bagel(
-        language_model, 
-        vit_model if training_args.visual_und else None, 
+        language_model,
+        vit_model if training_args.visual_und else None,
         config
     )
 
@@ -516,10 +516,10 @@ def main():
     )
     fsdp_model = fsdp_wrapper(model, fsdp_config)
     apply_activation_checkpointing(
-        fsdp_model, 
+        fsdp_model,
         checkpoint_wrapper_fn=functools.partial(
             checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT
-        ), 
+        ),
         check_fn=grad_checkpoint_check_fn
     )
 
@@ -530,10 +530,10 @@ def main():
 
     # Setup optimizer and scheduler
     optimizer = torch.optim.AdamW(
-        fsdp_model.parameters(), 
-        lr=training_args.lr, 
-        betas=(training_args.beta1, training_args.beta2), 
-        eps=training_args.eps, 
+        fsdp_model.parameters(),
+        lr=training_args.lr,
+        betas=(training_args.beta1, training_args.beta2),
+        eps=training_args.eps,
         weight_decay=0
     )
     if training_args.lr_scheduler == 'cosine':
@@ -556,7 +556,7 @@ def main():
         data_status = None
     else:
         optimizer, scheduler, train_step, data_status = FSDPCheckpoint.try_load_train_state(
-            resume_from, optimizer, scheduler, fsdp_config, 
+            resume_from, optimizer, scheduler, fsdp_config,
         )
 
     # Setup packed dataloader
@@ -611,12 +611,12 @@ def main():
     start_time = time()
     logger.info(f"Training for {training_args.total_steps} steps, starting at {train_step}...")
 
-    # 添加样本统计变量
+    # Add sample statistics variables
     total_samples_processed = 0
     dataset_sample_counts = {}
     last_sample_count = 0
     sample_start_time = time()
-    training_start_time = time()  # 记录训练开始时间用于计算总体统计
+    training_start_time = time()  # Record the training start time to calculate overall statistics
 
     for curr_step, data in enumerate(train_loader, start=train_step):
         if curr_step >= training_args.total_steps:
@@ -625,26 +625,26 @@ def main():
         data = data.cuda(device).to_dict()
         data_indexes = data.pop('batch_data_indexes', None)
         ce_loss_weights = data.pop('ce_loss_weights', None)
-        
-        # 统计当前batch的样本数量
+
+        # Count the number of samples in the current batch
         current_batch_samples = len(data['sample_lens'])
         total_samples_processed += current_batch_samples
-        
-        # 按数据集统计样本数量
+
+        # Count samples by dataset
         if data_indexes:
             for item in data_indexes:
                 dataset_name = item['dataset_name']
                 if dataset_name not in dataset_sample_counts:
                     dataset_sample_counts[dataset_name] = 0
                 dataset_sample_counts[dataset_name] += 1
-        
+
         with torch.amp.autocast("cuda", enabled=True, dtype=torch.bfloat16):
             if training_args.visual_gen:
                 with torch.no_grad():
                     # Encode the "bad" image latents (input)
                     if 'padded_images' in data:
                         data['padded_latent'] = vae_model.encode(data.pop('padded_images'))
-                    
+
                     # Encode the "good" image latents (ground truth target)
                     if 'padded_gt_images' in data:
                         data['packed_latent_clean_gt'] = vae_model.encode(data.pop('padded_gt_images'))
@@ -697,23 +697,23 @@ def main():
             total_samples = torch.tensor(len(data['sample_lens']), device=device)
             dist.all_reduce(total_samples, op=dist.ReduceOp.SUM)
 
-            # 跨GPU同步样本总数统计
+            # Synchronize total sample count across GPUs
             total_samples_tensor = torch.tensor(total_samples_processed, device=device)
             dist.all_reduce(total_samples_tensor, op=dist.ReduceOp.SUM)
             global_total_samples = total_samples_tensor.item()
 
-            # 计算样本处理速度
+            # Calculate sample processing speed
             torch.cuda.synchronize()
             end_time = time()
             steps_per_sec = training_args.log_every / (end_time - start_time)
-            
-            # 计算样本处理速度（自上次日志以来）
+
+            # Calculate sample processing speed (since the last log)
             samples_since_last_log = global_total_samples - last_sample_count
             samples_per_sec = samples_since_last_log / (end_time - sample_start_time) if end_time > sample_start_time else 0
-            
+
             message = f"(step={curr_step:07d}) "
             # ===================
-            # wandb_log = {}  # 注释wandb_log相关
+            # wandb_log = {}  # Comment out wandb_log related
             # ===================
             for key, value in loss_dict.items():
                 # Reduce loss history over all processes:
@@ -721,39 +721,41 @@ def main():
                 dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
                 avg_loss = avg_loss.item() / dist.get_world_size()
                 message += f"Train Loss {key}: {avg_loss:.4f}, "
-                # wandb_log[key] = avg_loss  # 注释
-            
+                # wandb_log[key] = avg_loss  # commented out
+
             message += f"Train Steps/Sec: {steps_per_sec:.2f}, "
             message += f"Samples/Sec: {samples_per_sec:.2f}, "
             message += f"Total Samples: {global_total_samples}, "
             logger.info(message)
-            
-            # 输出详细的数据集样本统计
+
+            # Output detailed dataset sample statistics
             if dist.get_rank() == 0 and dataset_sample_counts:
                 dataset_stats = "Dataset Sample Counts: "
                 for dataset_name, count in dataset_sample_counts.items():
                     dataset_stats += f"{dataset_name}={count}, "
                 logger.info(dataset_stats.rstrip(", "))
 
-            # wandb_log['lr'] = optimizer.param_groups[0]['lr']            # 注释
-            # wandb_log['total_mse_tokens'] = total_mse_tokens.item()      # 注释
-            # wandb_log['total_ce_tokens'] = total_ce_tokens.item()        # 注释
-            # wandb_log['total_norm'] = total_norm.item()                  # 注释
-            # wandb_log['total_samples'] = total_samples.item()            # 注释
-            # wandb_log['global_total_samples'] = global_total_samples     # 新增统计
-            # wandb_log['samples_per_sec'] = samples_per_sec               # 新增统计
+            ############## you can use these if you has wandb account ######################
+
+            # wandb_log['lr'] = optimizer.param_groups[0]['lr']               # commented out
+            # wandb_log['total_mse_tokens'] = total_mse_tokens.item()         # commented out
+            # wandb_log['total_ce_tokens'] = total_ce_tokens.item()           # commented out
+            # wandb_log['total_norm'] = total_norm.item()                     # commented out
+            # wandb_log['total_samples'] = total_samples.item()               # commented out
+            # wandb_log['global_total_samples'] = global_total_samples        # newly added statistic
+            # wandb_log['samples_per_sec'] = samples_per_sec                  # newly added statistic
 
             mem_allocated = torch.tensor(torch.cuda.max_memory_allocated() / 1024**2, device=device)
             dist.all_reduce(mem_allocated, op=dist.ReduceOp.MAX)
-            # wandb_log['mem_allocated'] = mem_allocated                   # 注释
+            # wandb_log['mem_allocated'] = mem_allocated                      # commented out
             mem_cache = torch.tensor(torch.cuda.max_memory_reserved() / 1024**2, device=device)
             dist.all_reduce(mem_cache, op=dist.ReduceOp.MAX)
-            # wandb_log['mem_cache'] = mem_cache                           # 注释
+            # wandb_log['mem_cache'] = mem_cache                              # commented out
 
             # if dist.get_rank() == 0:
-            #     wandb.log(wandb_log, step=curr_step)                     # 注释
-            
-            # 更新统计变量
+            #     wandb.log(wandb_log, step=curr_step)                        # commented out
+
+            # Update statistic variables
             last_sample_count = global_total_samples
             sample_start_time = end_time
             start_time = time()
@@ -766,86 +768,86 @@ def main():
             data_status[item['dataset_name']][item['worker_id']] = item['data_indexes']
 
         if curr_step > 0 and curr_step % training_args.save_every == 0:
-            # --- 步骤 1: (BUG修复) 将集体通信操作移出 if 判断 ---
-            # 所有进程都参与计算，以避免死锁
+            # --- Step 1: (BUG FIX) Move the collective communication operation out of the if statement ---
+            # All processes participate in the calculation to avoid deadlock
             samples_tensor = torch.tensor(total_samples_processed, device=device)
             dist.all_reduce(samples_tensor, op=dist.ReduceOp.SUM)
 
-            # --- 步骤 2: (功能修正) 恢复对 data_status 的分布式收集 ---
-            # 创建一个列表用于在 rank 0 上接收所有进程的 data_status
-            # FSDPCheckpoint.fsdp_save_ckpt 函数需要这个列表来正确保存数据加载状态
+            # --- Step 2: (FUNCTIONAL FIX) Restore distributed collection of data_status ---
+            # Create a list to receive data_status from all processes on rank 0
+            # The FSDPCheckpoint.fsdp_save_ckpt function needs this list to correctly save the data loading state
             gather_list = [None] * dist.get_world_size()
-            # rank 0 收集所有进程的 data_status 对象
+            # rank 0 gathers the data_status objects from all processes
             dist.gather_object(
                 data_status,
                 gather_list if dist.get_rank() == 0 else None,
                 dst=0
             )
 
-            # --- 步骤 3: 只让 rank 0 进程打印日志 ---
+            # --- Step 3: Only let the rank 0 process print logs ---
             if dist.get_rank() == 0:
                 checkpoint_total_samples = samples_tensor.item()
-                
+
                 logger.info("=" * 60)
-                logger.info(f"🔄 Checkpoint 保存时统计 - Step {curr_step}")
-                logger.info(f"✅ 累计处理样本数: {checkpoint_total_samples:,}")
-                
+                logger.info(f"🔄 Checkpoint save statistics - Step {curr_step}")
+                logger.info(f"✅ Total samples processed: {checkpoint_total_samples:,}")
+
                 if dataset_sample_counts:
-                    logger.info("📊 各数据集样本统计:")
+                    logger.info("📊 Sample statistics per dataset:")
                     for dataset_name, count in sorted(dataset_sample_counts.items()):
-                        logger.info(f"   {dataset_name}: {count:,} 样本")
-                
-                # 计算平均处理速度
+                        logger.info(f"   {dataset_name}: {count:,} samples")
+
+                # Calculate average processing speed
                 elapsed_time = time() - training_start_time
                 if elapsed_time > 0:
                     avg_samples_per_sec = checkpoint_total_samples / elapsed_time
-                    logger.info(f"📈 平均样本处理速度: {avg_samples_per_sec:.2f} 样本/秒")
-                
+                    logger.info(f"📈 Average samples per second: {avg_samples_per_sec:.2f} samples/sec")
+
                 logger.info("=" * 60)
-            
-            # --- 步骤 4: 调用保存函数 ---
-            # 注意 data_status 参数现在传递的是收集后的列表 gather_list
+
+            # --- Step 4: Call the save function ---
+            # Note that the data_status parameter now passes the collected list gather_list
             FSDPCheckpoint.fsdp_save_ckpt(
-                ckpt_dir=training_args.checkpoint_dir, 
-                train_steps=curr_step, 
-                model=fsdp_model, 
-                ema_model=None, 
-                optimizer=optimizer, 
-                scheduler=scheduler, 
+                ckpt_dir=training_args.checkpoint_dir,
+                train_steps=curr_step,
+                model=fsdp_model,
+                ema_model=None,
+                optimizer=optimizer,
+                scheduler=scheduler,
                 logger=logger,
                 fsdp_config=fsdp_config,
-                data_status=gather_list  # 传递收集后的列表
+                data_status=gather_list  # pass the collected list
             )
 
-    # 最终统计输出
+    # Final statistics output
     final_total_samples_tensor = torch.tensor(total_samples_processed, device=device)
     dist.all_reduce(final_total_samples_tensor, op=dist.ReduceOp.SUM)
 
-    # 2. 然后，只让 rank 0 进程打印最终的统计信息
+    # Then, only let the rank 0 process print the final statistics
     if dist.get_rank() == 0:
         logger.info("=== Training Complete - Final Statistics ===")
-        
-        # 从已经同步完成的 tensor 中获取最终结果
+
+        # Get the final result from the already synchronized tensor
         final_global_total_samples = final_total_samples_tensor.item()
-        
+
         logger.info(f"Total samples processed: {final_global_total_samples}")
-        
+
         if dataset_sample_counts:
             logger.info("Final dataset sample counts:")
             for dataset_name, count in sorted(dataset_sample_counts.items()):
-                logger.info(f"  {dataset_name}: {count} samples")
-        
-        # 计算总体训练速度
-        training_duration = time() - training_start_time # 注意变量名可能需要调整
+                logger.info(f"   {dataset_name}: {count} samples")
+
+        # Calculate overall training speed
+        training_duration = time() - training_start_time # Note that the variable name may need adjustment
         if training_duration > 0:
             avg_samples_per_sec = final_global_total_samples / training_duration
             logger.info(f"Average samples per second: {avg_samples_per_sec:.2f}")
-        
+
         logger.info("=== End Statistics ===")
 
     logger.info("Done!")
     # if dist.get_rank() == 0:
-    #     wandb.finish()   # 注释
+    #     wandb.finish()   # commented out
     dist.destroy_process_group()
 
 

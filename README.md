@@ -47,16 +47,15 @@
   </a>
 </p>
 
-# Unified Model for Multimodal Understanding and Generation
-> [Chaorui Deng*](https://scholar.google.com/citations?hl=en&user=k0TWfBoAAAAJ), [Deyao Zhu*](https://tsutikgiau.github.io/), [Kunchang Li*](https://andy1621.github.io/), [Chenhui Gou*](https://www.linkedin.com/in/chenhui-gou-9201081a1/?originalSubdomain=au), [Feng Li*](https://fengli-ust.github.io/), [Zeyu Wang](https://zw615.github.io/), Shu Zhong, [Weihao Yu](https://whyu.me/), [Xiaonan Nie](https://codecaution.github.io/), [Ziang Song](https://www.linkedin.com/in/ziang-song-43b0ab8a/), Guang Shi :email: , [Haoqi Fan* :tophat: ](https://haoqifan.github.io/)
+# SRUM: Fine-Grained Self-Rewarding for Unified Models
+> [Weiyang Jin*](https://github.com/WayneJin0918), [Yuwei Niu*](https://purshow.github.io/), Jiaqi Liao, [Chengqi Duan](https://scholar.google.com/citations?user=r9qb4ZwAAAAJ&hl=en), [Xihui Liu :email: ](https://xh-liu.github.io/)
 >
-> contact: shiguang.sg@bytedance.com
+> contact: xihuiliu@hku.hk
 > 
-> We present **BAGEL**, an open‑source multimodal foundation model with 7B active parameters (14B total) trained on large‑scale interleaved multimodal data. BAGEL outperforms the current top‑tier open‑source VLMs like Qwen2.5-VL and InternVL-2.5 on standard multimodal understanding leaderboards, and delivers text‑to‑image quality that is competitive with strong specialist generators such as SD3.
-Moreover, BAGEL demonstrates superior qualitative results in classical image‑editing scenarios than the leading open-source models. More importantly, it extends to free-form visual manipulation, multiview synthesis, and world navigation, capabilities that constitute "world-modeling" tasks beyond the scope of previous image-editing models.
-The figure below showcases BAGEL's qualitative performance.
+> We present **SRUM**, a post-training reward fine-tuning method based on Unified Models (UMs) leverages UMs' inherent understanding capabilities to boost their generative abilities, bridging the gaps in performance caused by conflicts during the previous training phase. SRUM demonstrates exceptional generalization across both common positions and world knowledge..
+The figure below showcases SRUM's qualitative performance compared with SFT and Base Model.
 
-<p align="center"><img src="assets/teaser.webp" width="95%"></p>
+<p align="center"><img src="assets/web_taser.webp" width="95%"></p>
 
 
 <!-- ## 🧠 Method
@@ -76,19 +75,12 @@ As we scale up BAGEL’s pretraining with more multimodal tokens, we observe con
 
 We sincerely thank all contributors from the open community for their valuable support.
 
-- **June 15, 2025:** We have updated and fixed the evaluation results for [KRIS-Bench](https://github.com/mercurystraw/Kris_Bench) and [RISEBench](https://github.com/PhoenixZ810/RISEBench). **Our model, BAGEL, demonstrates performance comparable to Gemini 2.0 on these reasoning benchmarks.** We have also released the evaluation code for both KRIS-Bench and RISEBench, along with [ImgEdit-Bench](https://github.com/PKU-YuanGroup/ImgEdit). For further details, please refer to [EVAL](./EVAL.md).
-- **Jun 5, 2025:** Thanks to [@davideuler](https://github.com/davideuler) for contributing the [Dockerfile with prebuilt flash_attn](https://github.com/ByteDance-Seed/Bagel/issues/125).
-- **May 30, 2025:** Many thanks to [@prartio](https://github.com/prartio) for contributing the [Windows 11 installation guideline](https://github.com/ByteDance-Seed/Bagel/issues/92), and to [@gluttony-10](https://github.com/gluttony-10) for his work on the [inference of quantization](https://github.com/ByteDance-Seed/Bagel/pull/88).
-- **May 29, 2025:** Special thanks to [@jnc-nj](https://github.com/jnc-nj) for contributing the [Dockerfile](https://github.com/ByteDance-Seed/Bagel/issues/75).
-- **May 26, 2025:** Thanks to [@neverbiasu](https://github.com/neverbiasu) for contributing [ComfyUI](https://github.com/neverbiasu/ComfyUI-BAGEL).
-- **May 25, 2025:** Special thanks to [@LeanModels](https://github.com/LeanModels) for providing the [DF11-compressed version](https://huggingface.co/DFloat11/BAGEL-7B-MoT-DF11), and to [@Gapeleon](https://huggingface.co/Gapeleon) for the [INT8-compressed version](https://huggingface.co/Gapeleon/bytedance_BAGEL-7B-MoT-INT8). We also appreciate [@gluttony-10](https://github.com/gluttony-10) for contributions to the [Windows package](https://github.com/ByteDance-Seed/Bagel/issues/51).
-- **May 24, 2025:** Together with [@wangwei1237](https://github.com/wangwei1237), [@gluttony-10](https://github.com/gluttony-10), and [@KingNish24](https://github.com/KingNish24), we built a Gradio [app](app.py) and launched a [Hugging Face Space](https://huggingface.co/spaces/ByteDance-Seed/BAGEL).
-- **May 23, 2025:** We have provided a training guideline in [TRAIN](./TRAIN.md).
-- **May 20, 2025:** We released the official [website](https://bagel-ai.org/), [demo](https://demo.bagel-ai.org/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for BAGEL.
+- **Sept. 25, 2025:** We released the official [website](https://bagel-ai.org/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for SRUM.
 
 
 ## 📮 Notice
-**Call for Bad Cases:** If you have encountered any cases where the model performs poorly, we would greatly appreciate it if you could share them in the [issue#11](https://github.com/ByteDance-Seed/Bagel/issues/11) or [Discord](https://discord.gg/Z836xxzy).
+<!-- **Call for Bad Cases:** If you have encountered any cases where the model performs poorly, we would greatly appreciate it if you could share them in the [issue#11](https://github.com/ByteDance-Seed/Bagel/issues/11) or [Discord](https://discord.gg/Z836xxzy). -->
+Follow the Bagel's original settings, you should focus:
 
 **About Inference Hyperparameters:**
 - **`cfg_text_scale`:** Controls how strongly the model follows the text prompt. `1.0` disables text guidance. Typical range: `4.0–8.0`.
@@ -108,15 +100,12 @@ We sincerely thank all contributors from the open community for their valuable s
 
 1️⃣  Set up environment
 ```bash
-git clone https://github.com/bytedance-seed/BAGEL.git
-cd BAGEL
-conda create -n bagel python=3.10 -y
-conda activate bagel
-pip install -r requirements.txt
-pip install flash_attn==2.5.8 --no-build-isolation
+git clone https://github.com/WayneJin0918/SRUM
+cd SRUM
+conda env create -f environment.yaml
 ```
 
-2️⃣  Download pretrained checkpoint
+2️⃣  Download Bagel pretrained or our SRUM checkpoint
 ```python
 from huggingface_hub import snapshot_download
 
@@ -134,7 +123,7 @@ snapshot_download(cache_dir=cache_dir,
 
 ```
 
-3️⃣ Use Gradio WebUI to start playing with BAGEL!
+<!-- 3️⃣ Use Gradio WebUI to start playing with BAGEL!
 ```bash
 # For 32GB+ VRAM GPU or multi GPUs.
 python app.py
@@ -148,7 +137,7 @@ python app.py --mode 2 --zh
 ```bash
 # For 22~32GB VRAM GPU, not recommended to use INT8 quantization.
 python app.py  --mode 3
-```
+``` -->
 
 ## 🔥 Train & Eval
 
@@ -168,33 +157,28 @@ Please See [EVAL](EVAL.md) for more details.
 
 ## 📊 Benchmarks
 
-### 1. Visual Understanding
+### 1. Common Position
 
-| Model | MME | MMBench |   MMMU | MM-Vet | MathVista |
-| ------------------- | ----------: | ----------: | -------: | -------: | ----------: |
-| Janus-Pro-7B        | -  |     79.2 |     41.0 |     50.0 |           – |
-| Qwen2.5-VL-7B      | 2347    |   83.5 | **58.6** |     67.1 |           68.2 |
-| **BAGEL**    | **2388**  |  **85.0** |     55.3 | **67.2** |    **73.1** |
+| T2I Model | 3d spatial | Color | Complex | Nonspatial | Numeracy | Shape | Spatial | Texture | Overall |
+|-------|-----------|-------|---------|------------|----------|-------|---------|---------|---------|
+| FLUX.1-dev | 76.39 | 90.63 | 83.51 | 87.47 | 75.30 | 80.20 | 84.23 | 87.07 | 83.10 |
+| FLUX.1-schnell | 79.38 | 84.53 | 81.96 | 85.55 | 72.82 | 82.20 | 85.49 | 86.38 | 82.29 |
+| SD-3-medium | 77.83 | 91.63 | 84.73 | 86.12 | 72.80 | 83.72 | 88.20 | 89.03 | 84.26 |
+| SD-xl-base-1 | 72.25 | 77.75 | 75.00 | 85.28 | 57.14 | 72.18 | 77.08 | 78.38 | 74.38 |
+| Qwen-image | 88.23 | 93.57 | 91.48 | 91.31 | 87.40 | 89.42 | 89.35 | 92.50 | 90.41 |
 
-### 2. Text-to-Image Generation
-
-| Model        | GenEval | WISE |
-| ------------ | --------- | --------- |
-| Janus-Pro-7B | 0.80      | 0.35 | 
-| SD3-Medium   | 0.74      | - |
-| FLUX-1-dev   | 0.82      | 0.50 |
-| **BAGEL**    | 0.82  | 0.52  |
-| **BAGEL + Rewritter/CoT**    | **0.88**  | **0.70** |
-
-### 3. Image Editing
-
-| Model         | GEdit-Bench-EN (SC) | GEdit-Bench-EN (PQ) | GEdit-Bench-EN (O) | IntelligentBench | KISE-Bench | RISEBench |
-| ------------- | ---------------------: | ---------------------: | -------------------: | ------------------: | ------------: | ------------: | 
-| Step1X-Edit   | 🥉7.09                | 🥉6.76                | 🥈6.70            | 14.9               |  43.29   |  1.9  |
-| Gemini 2.0    | 6.73                  | 6.61                  | 6.32                | 🥈57.6             | 🥈62.41   |  🥈13.3  |
-| GPT-4o        | 🥇7.85              | 🥇7.62              | 🥇7.53            | 🥇78.9           | 🥇80.09   |  🥇28.9  |
-| **BAGEL**     | 🥈7.36                | 🥈6.83                | 🥉6.52                | 44.0               |  56.21   |  6.1 |
-| **BAGEL+CoT** | –                     | –                     | –                   | 🥉55.3             |  🥉60.18   |  🥉11.9 |
+| Unified Model | 3d spatial | Color | Complex | Nonspatial | Numeracy | Shape | Spatial | Texture | Overall |
+|-------|-----------|-------|---------|------------|----------|-------|---------|---------|---------|
+| Janus-Pro | 76.17 | 84.25 | 80.28 | 80.47 | 56.43 | 65.14 | 79.67 | 69.67 | 74.01 |
+| Show-o2 | 88.61 | 87.73 | 87.88 | 85.91 | 69.74 | 73.99 | 86.60 | 82.17 | 82.83 |
+| BLIP3o | 81.73 | 89.92 | 85.55 | 84.78 | 71.67 | 83.75 | 92.47 | 87.45 | 84.66 |
+| OmniGen2 | 82.21 | 92.22 | 86.87 | 88.51 | 72.00 | 83.95 | 90.07 | 90.88 | 85.84 |
+| Bagel | 77.98 | 89.30 | 83.32 | 85.03 | 70.40 | 81.94 | 81.52 | 87.93 | 82.18 |
+| Bagel (CoT) | 84.66 | 88.85 | 86.10 | 85.64 | 75.36 | 84.33 | 82.71 | 88.07 | 84.46 |
+| BLIP3o+SRUM | 83.78↑ | 90.22↑ | 86.57↑ | 85.10↑ | 74.52↑ | 85.44↑ | 93.88↑ | 86.52↓ | 85.75↑ |
+| OmniGen2+SRUM | 84.39↑ | 92.00↓ | 87.82↑ | 88.14↓ | 72.95↑ | 83.35↓ | 90.67↑ | 90.65↓ | 86.25↑ |
+| Bagel+SRUM | 83.10↑ | 92.90↑ | 88.69↑ | 88.47↑ | 78.52↑ | 84.23↑ | 86.92↑ | 89.57↑ | 86.55↑ |
+| ** Bagel+SRUM (CoT) **| 88.60↑ | 92.90↑ | 91.31↑ | 90.48↑ | 80.12↑ | 84.47↑ | 89.93↑ | 89.15↑ | 88.37↑ |
 
 
 
@@ -203,9 +187,9 @@ Please See [EVAL](EVAL.md) for more details.
 
 ```bibtex
 @article{deng2025bagel,
-  title   = {Emerging Properties in Unified Multimodal Pretraining},
-  author  = {Deng, Chaorui and Zhu, Deyao and Li, Kunchang and Gou, Chenhui and Li, Feng and Wang, Zeyu and Zhong, Shu and Yu, Weihao and Nie, Xiaonan and Song, Ziang and Shi, Guang and Fan, Haoqi},
-  journal = {arXiv preprint arXiv:2505.14683},
+  title   = {SRUM: Fine-Grained Self-Rewarding for Unified Models},
+  author  = {Jin, Weiyang and Niu, Yuwei and Liao, Jiaqi and Duan, Chengqi and Liu, Xihui},
+  journal = {arXiv preprint arXiv:2509.xxxx},
   year    = {2025}
 }
 ```

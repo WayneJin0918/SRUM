@@ -1,4 +1,4 @@
-# 文件名: vlm_multi_gpu.py
+# Filename: vlm_multi_gpu.py
 
 import os
 import json
@@ -10,9 +10,9 @@ import copy
 import logging
 
 def setup_logging(log_file):
-    """配置日志记录器，使其能够同时输出到文件和控制台"""
+    """Set up a logger to output to both a file and the console"""
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO) 
+    logger.setLevel(logging.INFO)
 
     if logger.hasHandlers():
         return
@@ -35,15 +35,15 @@ def setup_logging(log_file):
 
 def run_analysis_on_gpu(process_id, gpu_id, records_chunk, args):
     """
-    在指定GPU上运行vlm_analysis.py核心逻辑的目标函数。
+    Target function to run the core logic of vlm_analysis.py on a specified GPU.
     """
-    # 每个子进程独立配置日志，以避免文件句柄冲突
+    # Each child process configures its own logger to avoid file handle conflicts
     if args.log_file:
         setup_logging(args.log_file)
     
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
     
-    # --- MODIFIED: 导入更新后的 vlm_analysis.py (假设已重命名为 vlm.py) ---
+    # --- MODIFIED: Import the updated vlm_analysis.py (assuming it's renamed to vlm.py) ---
     try:
         from vlm import main as vlm_main
     except ImportError:
@@ -61,7 +61,7 @@ def run_analysis_on_gpu(process_id, gpu_id, records_chunk, args):
     sub_args = copy.deepcopy(args)
     sub_args.input_jsonl = str(tmp_input_jsonl)
     sub_args.output_jsonl = str(tmp_output_jsonl)
-    sub_args.overwrite = True # 子进程总是覆盖自己的临时文件
+    sub_args.overwrite = True # Child processes always overwrite their own temporary files
 
     logging.info(f"Process-{process_id} starting analysis with {len(records_chunk)} images on GPU {gpu_id}.")
     try:

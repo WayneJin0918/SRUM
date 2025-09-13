@@ -1,15 +1,12 @@
 #!/bin/bash
-export PYTHONPATH="/mnt/petrelfs/jinweiyang/Bagel/"
-# 节点数
-num_nodes=1         # 可根据集群实际情况修改
-node_rank=0         # 当前节点编号（多节点多机需要按实际配置）
-# master_addr="127.0.0.1"  # 主节点地址，单机可用本地
-master_port=29505        # 通信端口，避免与已有进程冲突
-# cd /mnt/data/nyw/Bagel
-# 模型路径
-model_path="BAGEL-7B-MoT"
-# export PYTHONPATH=/mnt/data/nyw/Bagel:$PYTHONPATH
+export PYTHONPATH="/mnt/Bagel/"
 # export WANDB_API_KEY="81dc34f0253dc006e90f97bfaf291beda833e155"
+num_nodes=1        # Can be modified according to the actual cluster setup
+node_rank=0        # Current node rank (needs to be configured according to the actual setup for multi-node/multi-machine)
+master_addr="127.0.0.1"  # Master node address, localhost can be used for a single machine
+master_port=29505      # Communication port, avoid conflicts with existing processes
+# cd /mnt/Bagel
+model_path="BAGEL-7B-MoT"
 
 torchrun \
   --nnodes=$num_nodes \
