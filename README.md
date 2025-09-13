@@ -1,48 +1,30 @@
 <p align="center">
-  <img src="https://lf3-static.bytednsdoc.com/obj/eden-cn/nuhojubrps/banner.png" alt="BAGEL" width="480"/>
+  <img src="/workspaces/SRUM/assets/srum_log.png" alt="SRUM" width="480"/>
 </p>
 
 <p align="center">
   <a href="https://bagel-ai.org/">
     <img
       src="https://img.shields.io/badge/BAGEL-Website-0A66C2?logo=safari&logoColor=white"
-      alt="BAGEL Website"
+      alt="SRUM Website"
     />
   </a>
   <a href="https://arxiv.org/abs/2505.14683">
     <img
       src="https://img.shields.io/badge/BAGEL-Paper-red?logo=arxiv&logoColor=red"
-      alt="BAGEL Paper on arXiv"
+      alt="SRUM Paper on arXiv"
     />
   </a>
   <a href="https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT">
     <img 
         src="https://img.shields.io/badge/BAGEL-Model-yellow?logo=huggingface&logoColor=yellow" 
-        alt="BAGEL Model"
-    />
-  </a>
-  <a href="https://demo.bagel-ai.org/">
-    <img
-      src="https://img.shields.io/badge/BAGEL-Demo-blue?logo=googleplay&logoColor=blue"
-      alt="BAGEL Demo"
+        alt="SRUM Model"
     />
   </a>
   <a href="https://huggingface.co/spaces/ByteDance-Seed/BAGEL">
     <img 
         src="https://img.shields.io/badge/BAGEL-Space-orange?logo=huggingface&logoColor=yellow" 
-        alt="BAGEL Model"
-    />
-  </a>
-  <a href="https://discord.gg/eXQNFhWe">
-    <img
-      src="https://img.shields.io/badge/BAGEL-Discord-5865F2?logo=discord&logoColor=purple"
-      alt="BAGEL Discord"
-    />
-  </a>
-  <a href="mailto:bagel@bytedance.com">
-    <img
-      src="https://img.shields.io/badge/BAGEL-Email-D14836?logo=gmail&logoColor=red"
-      alt="BAGEL Email"
+        alt="SRUM Model"
     />
   </a>
 </p>
@@ -55,7 +37,7 @@
 > We present **SRUM**, a post-training reward fine-tuning method based on Unified Models (UMs) leverages UMs' inherent understanding capabilities to boost their generative abilities, bridging the gaps in performance caused by conflicts during the previous training phase. SRUM demonstrates exceptional generalization across both common positions and world knowledge..
 The figure below showcases SRUM's qualitative performance compared with SFT and Base Model.
 
-<p align="center"><img src="assets/web_taser.webp" width="95%"></p>
+<p align="center"><img src="assets/web_taser.jpg" width="95%"></p>
 
 
 <!-- ## 🧠 Method
