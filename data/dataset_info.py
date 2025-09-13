@@ -60,14 +60,14 @@ DATASET_INFO = {
         'my_dpo_data': { # You can choose a descriptive name for this specific DPO dataset instance
             'jsonl_path': 'images_wise/bagel_base_7b_300_step_think/output.jsonl',
             'image_dirs': {
-                'positive': 'images_wise/bagel_base_7b_300_step_think', # 替换为您的实际路径
-                'negative': 'images_wise/bagel_base_7b_50_step_no_think', # 替换为您的实际路径
+                'positive': 'images_wise/bagel_base_7b_300_step_think', # switch to your own data path
+                'negative': 'images_wise/bagel_base_7b_50_step_no_think', # switch to your own data path
             },
             'chosen_images_dir': 'images_wise/bagel_base_7b_300_step_think',
             'rejected_images_dir': 'images_wise/bagel_base_7b_50_step_no_think',
             'num_files': 1, # Since it's one JSONL file, conceptually '1'. Adjust if your sharding needs differ.
             'num_total_samples': 1000, # Approximate total number of samples in your JSONL, crucial for distributed training,
-            'data_dir': 'images_base_dir', # **新增或修改此行**,
+            'data_dir': 'images_base_dir', 
         },
     },
     # ======================= MODIFICATION START =======================
@@ -81,7 +81,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'wise_sub/wise_sub_image/spatio-temporal_reasoning_base_7b_300_step_think' 
             },
-            'num_total_samples': 292, # 你的数据集总样本数
+            'num_total_samples': 292, # total number of samples in dataset
         },
         'ns_wise': {
             'jsonl_path': 'wise_sub/wise_sub_image/natural_science_base_7b_300_step_think_regional_rewards.jsonl',
@@ -92,7 +92,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'wise_sub/wise_sub_image/natural_science_base_7b_300_step_think' 
             },
-            'num_total_samples': 296, # 你的数据集总样本数
+            'num_total_samples': 296, # total number of samples in dataset
         },
         'cul_wise': {
             'jsonl_path': 'wise_sub/wise_sub_image/cultural_common_sense_base_7b_300_step_think_regional_rewards.jsonl',
@@ -103,7 +103,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'wise_sub/wise_sub_image/cultural_common_sense_base_7b_300_step_think' 
             },
-            'num_total_samples': 395, # 你的数据集总样本数
+            'num_total_samples': 395, # total number of samples in dataset
         },
         'comp_data': {
             'jsonl_path': 'images_comp/images_comp_base_7b_300_step_think_regional_rewards.jsonl',
@@ -114,7 +114,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'images_comp/bagel_base_7b_300_step_think' 
             },
-            'num_total_samples': 5911, # 你的数据集总样本数
+            'num_total_samples': 5911, # total number of samples in dataset
         },
         'comp_data_0p1_glo_and_regional': {
             'jsonl_path': 'images_comp/images_comp_base_sub_0p1_7b_300_step_think_glo_and_regional_rewards.jsonl',
@@ -125,7 +125,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'images_comp/bagel_base_7b_300_step_think' 
             },
-            'num_total_samples': 690, # 你的数据集总样本数
+            'num_total_samples': 690, # total number of samples in dataset
         },
         'comp_data_0p5': {
             'jsonl_path': 'images_comp/images_comp_base_sub_0p5_7b_300_step_think_regional_rewards.jsonl',
@@ -136,7 +136,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'images_comp/bagel_base_7b_300_step_think' 
             },
-            'num_total_samples': 3006, # 你的数据集总样本数
+            'num_total_samples': 3006, # total number of samples in dataset
         },
         'comp_data_0p1_sample': {
             'jsonl_path': 'images_comp/images_comp_base_sub_0p1_300_step_think_sample_level_rewards.jsonl',
@@ -147,7 +147,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'images_comp/bagel_base_7b_300_step_think' 
             },
-            'num_total_samples': 480, # 你的数据集总样本数
+            'num_total_samples': 480, # total number of samples in dataset
         },
         'comp_data_0p1_sample_bi': {
             'jsonl_path': 'images_comp/images_comp_base_sub_0p1_300_step_think_sample_level_binarized_rewards.jsonl',
@@ -158,7 +158,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'images_comp/bagel_base_7b_300_step_think' 
             },
-            'num_total_samples': 480, # 你的数据集总样本数
+            'num_total_samples': 480, # total number of samples in dataset
         },
         'comp_data_0p1_reg_bi': {
             'jsonl_path': 'images_comp/images_comp_base_sub_0p1_300_step_think_regional_binarized_rewards.jsonl',
@@ -169,7 +169,7 @@ DATASET_INFO = {
                 # Key 'bad' for the input images that have rewards
                 'bad': 'images_comp/bagel_base_7b_300_step_think' 
             },
-            'num_total_samples': 1216, # 你的数据集总样本数
+            'num_total_samples': 1216, # total number of samples in dataset
         },
     }
     # ======================= MODIFICATION END =======================
