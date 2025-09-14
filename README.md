@@ -125,15 +125,89 @@ python app.py  --mode 3
 
 ### Train
 
+1️⃣  Data preparation
+
+Use `srum_data_infer/compt2i.sh` for images inference in multi-gpus. Please change the output file address `--output_dir` as `./your_images_address`
+
 ```bash
-bash scripts/train.sh
+bash srum_data_infer/compt2i.sh
 ```
+Then you will get the image folder `./your_images_address` and next use `srum_data_infer/vlm.sh` for scoring. generally, `--image_dir` in bash file should same as `./your_address`. 
+
+```bash
+bash srum_data_infer/vlm.sh
+```
+Now, you have jsonl file `your_vlm_output.jsonl` and image folder `./your_images_address`, add these into `data/dataset_info.py`.
+
+```python
+        'comp_data': {
+            'jsonl_path': './your_vlm_output.jsonl',
+            # Replace 'image_base_dir' with the 'image_dirs' dictionary
+            'image_dirs': {
+                # Key 'good' for the ground-truth images
+                'good': './your_images_address',
+                # Key 'bad' for the input images that have rewards same as good one
+                'bad': './your_images_address' 
+            },
+            'num_total_samples': 5911, # total number of samples in dataset
+        },
+
+```
+
+2️⃣  Starting training
+
+Down the base model. Then, add yaml file: `scripts/data/rft_comp.yaml`.
+
+```python
+regional_reward:
+  dataset_names:
+  - comp_data
+  image_transform_args:
+    image_stride: 256
+    max_image_size: 1024
+    min_image_size: 512
+  num_used_data: # The sum should be larger that NUM_GPUS x NUM_WORKERS
+  - 8
+  weight: 1
+
+```
+
+```python
+from huggingface_hub import snapshot_download
+
+save_dir = "models/BAGEL-7B-MoT"
+repo_id = "ByteDance-Seed/BAGEL-7B-MoT"
+cache_dir = save_dir + "/cache"
+
+snapshot_download(cache_dir=cache_dir,
+  local_dir=save_dir,
+  repo_id=repo_id,
+  local_dir_use_symlinks=False,
+  resume_download=True,
+  allow_patterns=["*.json", "*.safetensors", "*.bin", "*.py", "*.md", "*.txt"],
+)
+
+```
+
+```bash
+bash scripts/train_reg_comp.sh
+```
+
+And we highly recommand max of `--save_every` is `--total_steps` minus one.
+
+3️⃣  Trans to hf weights
+
+```bash
+bash tool/trans2hf.sh 
+```
+
+If you want use generated data to SFT the base model, please use `tool/trans2parquet.py` to change images and jsons into parquet.
 
 You can replace the variables in the script with your own before running. 
 See [TRAIN](TRAIN.md) for more details.
 
 ### Eval
-We provide the scripts for evaluating VLM, T2I and Editing benchmarks. 
+Bagel provide the scripts for evaluating VLM, T2I and Editing benchmarks. 
 Please See [EVAL](EVAL.md) for more details.
 
 

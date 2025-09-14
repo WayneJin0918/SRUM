@@ -35,7 +35,7 @@ torchrun \
   --expected_num_tokens 8192 \
   --max_num_tokens 9216 \
   --max_num_tokens_per_sample 8192 \
-  --save_every 5911 \
-  --total_steps 5912 \
+  --save_every 308 \
+  --total_steps 309 \
   --checkpoint_dir "results/comp_lam_0p5_2e5" \
   --lambda_constraint 0.5 \

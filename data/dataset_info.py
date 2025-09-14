@@ -116,61 +116,6 @@ DATASET_INFO = {
             },
             'num_total_samples': 5911, # total number of samples in dataset
         },
-        'comp_data_0p1_glo_and_regional': {
-            'jsonl_path': 'images_comp/images_comp_base_sub_0p1_7b_300_step_think_glo_and_regional_rewards.jsonl',
-            # Replace 'image_base_dir' with the 'image_dirs' dictionary
-            'image_dirs': {
-                # Key 'good' for the ground-truth images
-                'good': 'images_comp/bagel_base_7b_300_step_think',
-                # Key 'bad' for the input images that have rewards
-                'bad': 'images_comp/bagel_base_7b_300_step_think' 
-            },
-            'num_total_samples': 690, # total number of samples in dataset
-        },
-        'comp_data_0p5': {
-            'jsonl_path': 'images_comp/images_comp_base_sub_0p5_7b_300_step_think_regional_rewards.jsonl',
-            # Replace 'image_base_dir' with the 'image_dirs' dictionary
-            'image_dirs': {
-                # Key 'good' for the ground-truth images
-                'good': 'images_comp/bagel_base_7b_300_step_think',
-                # Key 'bad' for the input images that have rewards
-                'bad': 'images_comp/bagel_base_7b_300_step_think' 
-            },
-            'num_total_samples': 3006, # total number of samples in dataset
-        },
-        'comp_data_0p1_sample': {
-            'jsonl_path': 'images_comp/images_comp_base_sub_0p1_300_step_think_sample_level_rewards.jsonl',
-            # Replace 'image_base_dir' with the 'image_dirs' dictionary
-            'image_dirs': {
-                # Key 'good' for the ground-truth images
-                'good': 'images_comp/bagel_base_7b_300_step_think',
-                # Key 'bad' for the input images that have rewards
-                'bad': 'images_comp/bagel_base_7b_300_step_think' 
-            },
-            'num_total_samples': 480, # total number of samples in dataset
-        },
-        'comp_data_0p1_sample_bi': {
-            'jsonl_path': 'images_comp/images_comp_base_sub_0p1_300_step_think_sample_level_binarized_rewards.jsonl',
-            # Replace 'image_base_dir' with the 'image_dirs' dictionary
-            'image_dirs': {
-                # Key 'good' for the ground-truth images
-                'good': 'images_comp/bagel_base_7b_300_step_think',
-                # Key 'bad' for the input images that have rewards
-                'bad': 'images_comp/bagel_base_7b_300_step_think' 
-            },
-            'num_total_samples': 480, # total number of samples in dataset
-        },
-        'comp_data_0p1_reg_bi': {
-            'jsonl_path': 'images_comp/images_comp_base_sub_0p1_300_step_think_regional_binarized_rewards.jsonl',
-            # Replace 'image_base_dir' with the 'image_dirs' dictionary
-            'image_dirs': {
-                # Key 'good' for the ground-truth images
-                'good': 'images_comp/bagel_base_7b_300_step_think',
-                # Key 'bad' for the input images that have rewards
-                'bad': 'images_comp/bagel_base_7b_300_step_think' 
-            },
-            'num_total_samples': 1216, # total number of samples in dataset
-        },
     }
     # ======================= MODIFICATION END =======================
 }
