@@ -37,7 +37,7 @@
 > We present **SRUM**, a post-training reward fine-tuning method based on Unified Models (UMs) leverages UMs' inherent understanding capabilities to boost their generative abilities, bridging the gaps in performance caused by conflicts during the previous training phase. SRUM demonstrates exceptional generalization across both common positions and world knowledge..
 The figure below showcases SRUM's qualitative performance compared with SFT and Base Model.
 
-<p align="center"><img src="assets/web_taser.jpg" width="95%"></p>
+<p align="center"><img src="assets/taser.jpg" width="95%"></p>
 
 
 <!-- ## 🧠 Method
