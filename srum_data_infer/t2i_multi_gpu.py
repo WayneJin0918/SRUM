@@ -15,7 +15,7 @@ def run_on_gpu(proc_id, gpu_id, prompts, args, tmp_jsonl_path):
     
     # Dynamically import the main inference script and its dependencies
     # This is done here to ensure it happens within the new process
-    from srum_data_infer.t2i import main as t2i_main
+    from t2i import main as t2i_main
     from t2i import parser as t2i_parser # Import the parser from the inference script
 
     # Create a temporary metadata file unique to this process
