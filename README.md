@@ -85,8 +85,8 @@ Follow the Bagel's original settings, you should focus:
 git clone https://github.com/WayneJin0918/SRUM
 cd SRUM
 conda env create -f environment.yaml
-pip install -r requirements.txt
 conda activate SRUM
+pip install -r requirements.txt
 ```
 
 Or you can follow the settings of Bagel
