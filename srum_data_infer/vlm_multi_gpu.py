@@ -45,7 +45,7 @@ def run_analysis_on_gpu(process_id, gpu_id, records_chunk, args):
     
     # --- MODIFIED: Import the updated vlm_analysis.py (assuming it's renamed to vlm.py) ---
     try:
-        from vlm import main as vlm_main
+        from srum_data_infer.vlm import main as vlm_main
     except ImportError:
         logging.error(f"Error: Failed to import 'vlm.py'. Make sure it's in the same directory or Python path.")
         return
