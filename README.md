@@ -88,6 +88,12 @@ conda env create -f environment.yaml
 conda activate SRUM
 pip install -r requirements.txt
 ```
+if flash attention is hard to down, please follow:
+
+```bash
+wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.0.post2/flash_attn-2.7.0.post2+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+pip install flash_attn-2.7.0.post2+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+```
 
 Or you can follow the settings of Bagel
 
