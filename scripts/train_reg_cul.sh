@@ -14,7 +14,7 @@ torchrun \
   --nproc_per_node=8 \
   --master_port=$master_port \
   train/pretrain_unified_navit.py \
-  --dataset_config_file scripts/data/wise_reg.yaml \
+  --dataset_config_file scripts/data/rft_cul_wise.yaml \
   --model_path $model_path \
   --visual_gen True \
   --visual_und False \
