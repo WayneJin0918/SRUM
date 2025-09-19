@@ -20,4 +20,3 @@ dependencies:
   - pytorch
   - torchvision
   - pytorch-cuda=12.1
-  - flash-attn==2.7.0.post2
