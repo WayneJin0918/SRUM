@@ -138,6 +138,13 @@ bash srum_data_infer/compt2i.sh
 ```
 Then you will get the image folder `./your_images_address` and next use `srum_data_infer/vlm.sh` for scoring. generally, `--image_dir` in bash file should same as `./your_address`. 
 
+Before using vlm inference, you should download the SAM weights under SRUM/srum_data_infer
+
+```bash
+cd srum_data_infer
+wget https://huggingface.co/HCMUE-Research/SAM-vit-h/resolve/main/sam_vit_h_4b8939.pth
+```
+
 ```bash
 bash srum_data_infer/vlm.sh
 ```
