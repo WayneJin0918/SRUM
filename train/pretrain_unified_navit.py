@@ -1,8 +1,7 @@
-# import wandb    # 已注释
-# 其余 import 保持不变
+
 import functools
 import os
-# import wandb   # 删除或注释这一行
+# import wandb   # or you can start wandb
 import yaml
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -309,7 +308,7 @@ class TrainingArguments:
         metadata={"help": "Number of model replicas per GPU rank for tensor parallelism."}
     )
     num_shard: int = field(
-        default=4,
+        default=8,
         metadata={"help": "Number of parameter shards when using FSDP HYBRID_SHARD."}
     )
     sharding_strategy: str = field(
