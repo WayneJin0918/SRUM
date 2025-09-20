@@ -1,5 +1,5 @@
 #!/bin/bash
-export PYTHONPATH="/mnt/Bagel/"
+export PYTHONPATH="Your_root_path_to_SRUM_like_mnt/SRUM_"
 # export WANDB_API_KEY="81dc34f0253dc006e90f97bfaf291beda833e155"
 num_nodes=1        # Can be modified according to the actual cluster setup
 node_rank=0        # Current node rank (needs to be configured according to the actual setup for multi-node/multi-machine)

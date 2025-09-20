@@ -4,14 +4,11 @@
 from .interleave_datasets import UnifiedEditIterableDataset
 from .t2i_dataset import T2IIterableDataset
 from .vlm_dataset import SftJSONLIterableDataset
-from .dpo_dataset import DPODataset # Import your new DPO dataset class
 from .regional_reward_dataset import RegionalRewardDataset
 DATASET_REGISTRY = {
     't2i_pretrain': T2IIterableDataset,
     'vlm_sft': SftJSONLIterableDataset,
     'unified_edit': UnifiedEditIterableDataset,
-    'dpo_image_gen': DPODataset,
-    # === 新增 ===
     'regional_reward': RegionalRewardDataset,
     # ============
 }
@@ -56,21 +53,6 @@ DATASET_INFO = {
 			'num_total_samples': 64
         }
     },
-    'dpo_image_gen': { # New entry for DPO dataset
-        'my_dpo_data': { # You can choose a descriptive name for this specific DPO dataset instance
-            'jsonl_path': 'images_wise/bagel_base_7b_300_step_think/output.jsonl',
-            'image_dirs': {
-                'positive': 'images_wise/bagel_base_7b_300_step_think', # switch to your own data path
-                'negative': 'images_wise/bagel_base_7b_50_step_no_think', # switch to your own data path
-            },
-            'chosen_images_dir': 'images_wise/bagel_base_7b_300_step_think',
-            'rejected_images_dir': 'images_wise/bagel_base_7b_50_step_no_think',
-            'num_files': 1, # Since it's one JSONL file, conceptually '1'. Adjust if your sharding needs differ.
-            'num_total_samples': 1000, # Approximate total number of samples in your JSONL, crucial for distributed training,
-            'data_dir': 'images_base_dir', 
-        },
-    },
-    # ======================= MODIFICATION START =======================
     'regional_reward': {
         'st_wise': {
             'jsonl_path': 'wise_sub/wise_sub_image/spatio-temporal_reasoning_base_7b_300_step_think_regional_rewards.jsonl',
@@ -117,5 +99,4 @@ DATASET_INFO = {
             'num_total_samples': 5911, # total number of samples in dataset
         },
     }
-    # ======================= MODIFICATION END =======================
 }

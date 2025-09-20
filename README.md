@@ -209,6 +209,8 @@ snapshot_download(cache_dir=cache_dir,
 bash scripts/train_reg_comp.sh
 ```
 
+Please do not forger to change the `PYTHONPATH` to your root SRUM path like `/mnt/SRUM`
+
 And we highly recommand max of `--save_every` is `--total_steps` minus one.
 
 3️⃣  Trans to hf weights
