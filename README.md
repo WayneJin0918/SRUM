@@ -5,25 +5,25 @@
 <p align="center">
   <a href="https://bagel-ai.org/">
     <img
-      src="https://img.shields.io/badge/BAGEL-Website-0A66C2?logo=safari&logoColor=white"
+      src="https://img.shields.io/badge/SRUM-Website-blue"
       alt="SRUM Website"
     />
   </a>
   <a href="https://arxiv.org/abs/2505.14683">
     <img
-      src="https://img.shields.io/badge/BAGEL-Paper-red?logo=arxiv&logoColor=red"
+      src="https://img.shields.io/badge/SRUM-Paper-red"
       alt="SRUM Paper on arXiv"
     />
   </a>
-  <a href="https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT">
+  <a href="https://huggingface.co/Wayne-King/SRUM_BAGEL_7B_MoT">
     <img 
-        src="https://img.shields.io/badge/BAGEL-Model-yellow?logo=huggingface&logoColor=yellow" 
+        src="https://img.shields.io/badge/SRUM-Model-yellow" 
         alt="SRUM Model"
     />
   </a>
-  <a href="https://huggingface.co/spaces/ByteDance-Seed/BAGEL">
+  <a href="https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train">
     <img 
-        src="https://img.shields.io/badge/BAGEL-Space-orange?logo=huggingface&logoColor=yellow" 
+        src="https://img.shields.io/badge/SRUM-Datasets-yellow" 
         alt="SRUM Model"
     />
   </a>
@@ -36,9 +36,6 @@
 > 
 > We present **SRUM**, a post-training reward fine-tuning method based on Unified Multimodal Models (UMMs) leverages UMMs' inherent understanding capabilities to boost their generative abilities, bridging the gaps in performance caused by conflicts during the previous training phase. SRUM demonstrates exceptional generalization across both common positions and world knowledge..
 The figure below showcases SRUM's qualitative performance compared with SFT and Base Model.
-
-<p align="center"><img src="assets/teaser.pdf" width="95%"></p>
-
 
 <!-- ## 🧠 Method
 BAGEL adopts a Mixture-of-Transformer-Experts (MoT) architecture to maximize the model’s capacity to learn from richly diverse multimodal information. Following the same principle of capacity maximization, it utilizes two separate encoders to capture pixel-level and semantic-level features of an image. The overall framework follows a Next Group of Token Prediction paradigm, where the model is trained to predict the next group of language or visual tokens as a compression target.
@@ -273,10 +270,6 @@ Of course, here are the tables in Markdown format.
 | Bagel | 88.1 | 77.3 | 69.5 | 71.5 |
 | Bagel+SFT | 86.9 | 78.4 | 68.9 | 70.0 |
 | Bagel+SRUM | 88.7 | 80.2 | 69.2 | 72.6 |
-
-### 3. World Knowledge
-
-<p align="center"><img src="assets/wise.jpg" width="95%"></p>
 
 ## ✍️ Citation
 
