@@ -29,15 +29,15 @@
   </a>
 </p>
 
-# SRUM: Fine-Grained Self-Rewarding for Unified Models
-> [Weiyang Jin*](https://github.com/WayneJin0918), [Yuwei Niu*](https://purshow.github.io/), Jiaqi Liao, [Chengqi Duan](https://scholar.google.com/citations?user=r9qb4ZwAAAAJ&hl=en), [Xihui Liu :email: ](https://xh-liu.github.io/)
+# SRUM: Fine-Grained Self-Rewarding for Unified Multimodal Models
+> [Weiyang Jin*](https://github.com/WayneJin0918), [Yuwei Niu*](https://purshow.github.io/), Jiaqi Liao, [Chengqi Duan](https://scholar.google.com/citations?user=r9qb4ZwAAAAJ&hl=en), Aoxue Li, [Shenghua Gao](https://scholar.google.com/citations?user=fe-1v0MAAAAJ&hl=en), [Xihui Liu :email: ](https://xh-liu.github.io/)
 >
 > contact: xihuiliu@hku.hk
 > 
-> We present **SRUM**, a post-training reward fine-tuning method based on Unified Models (UMs) leverages UMs' inherent understanding capabilities to boost their generative abilities, bridging the gaps in performance caused by conflicts during the previous training phase. SRUM demonstrates exceptional generalization across both common positions and world knowledge..
+> We present **SRUM**, a post-training reward fine-tuning method based on Unified Multimodal Models (UMMs) leverages UMMs' inherent understanding capabilities to boost their generative abilities, bridging the gaps in performance caused by conflicts during the previous training phase. SRUM demonstrates exceptional generalization across both common positions and world knowledge..
 The figure below showcases SRUM's qualitative performance compared with SFT and Base Model.
 
-<p align="center"><img src="assets/taser.jpg" width="95%"></p>
+<p align="center"><img src="assets/teaser.pdf" width="95%"></p>
 
 
 <!-- ## 🧠 Method
@@ -57,7 +57,7 @@ As we scale up BAGEL’s pretraining with more multimodal tokens, we observe con
 
 We sincerely thank all contributors from the open community for their valuable support.
 
-- **Sept. 25, 2025:** We released the official [website](https://bagel-ai.org/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for SRUM.
+- **Sept. 25, 2025:** We released the official [website](https://waynejin0918.github.io/srum_web/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for SRUM.
 
 
 ## 📮 Notice
@@ -88,7 +88,7 @@ conda env create -f environment.yaml
 conda activate SRUM
 pip install -r requirements.txt
 ```
-if flash attention is hard to down, please follow:
+if flash attention is hard to pip, please follow:
 
 ```bash
 wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.0.post2/flash_attn-2.7.0.post2+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
@@ -231,7 +231,7 @@ Please See [EVAL](EVAL.md) for more details.
 
 ## 📊 Benchmarks
 
-### 1. Common Position
+### 1. Composition
 
 | T2I Model | 3d spatial | Color | Complex | Nonspatial | Numeracy | Shape | Spatial | Texture | Overall |
 |-------|-----------|-------|---------|------------|----------|-------|---------|---------|---------|
@@ -239,7 +239,6 @@ Please See [EVAL](EVAL.md) for more details.
 | FLUX.1-schnell | 79.38 | 84.53 | 81.96 | 85.55 | 72.82 | 82.20 | 85.49 | 86.38 | 82.29 |
 | SD-3-medium | 77.83 | 91.63 | 84.73 | 86.12 | 72.80 | 83.72 | 88.20 | 89.03 | 84.26 |
 | SD-xl-base-1 | 72.25 | 77.75 | 75.00 | 85.28 | 57.14 | 72.18 | 77.08 | 78.38 | 74.38 |
-| Qwen-image | 88.23 | 93.57 | 91.48 | 91.31 | 87.40 | 89.42 | 89.35 | 92.50 | 90.41 |
 
 | Unified Model | 3d spatial | Color | Complex | Nonspatial | Numeracy | Shape | Spatial | Texture | Overall |
 |-------|-----------|-------|---------|------------|----------|-------|---------|---------|---------|
@@ -250,24 +249,45 @@ Please See [EVAL](EVAL.md) for more details.
 | Bagel | 77.98 | 89.30 | 83.32 | 85.03 | 70.40 | 81.94 | 81.52 | 87.93 | 82.18 |
 | Bagel (CoT) | 84.66 | 88.85 | 86.10 | 85.64 | 75.36 | 84.33 | 82.71 | 88.07 | 84.46 |
 | BLIP3o+SRUM | 83.78↑ | 90.22↑ | 86.57↑ | 85.10↑ | 74.52↑ | 85.44↑ | 93.88↑ | 86.52↓ | 85.75↑ |
-| OmniGen2+SRUM | 84.39↑ | 92.00↓ | 87.82↑ | 88.14↓ | 72.95↑ | 83.35↓ | 90.67↑ | 90.65↓ | 86.25↑ |
 | Bagel+SRUM | 83.10↑ | 92.90↑ | 88.69↑ | 88.47↑ | 78.52↑ | 84.23↑ | 86.92↑ | 89.57↑ | 86.55↑ |
-| ** Bagel+SRUM (CoT) **| 88.60↑ | 92.90↑ | 91.31↑ | 90.48↑ | 80.12↑ | 84.47↑ | 89.93↑ | 89.15↑ | 88.37↑ |
+| Bagel+SRUM (CoT) 🏆| 88.60↑ | 92.90↑ | 91.31↑ | 90.48↑ | 80.12↑ | 84.47↑ | 89.93↑ | 89.15↑ | 88.37↑ |
 
+### 2. Reasoning-informed
 
+Bagel Model: Detailed Evaluation ResultsDetailed evaluation results of the Bagel model for different categories, separated into Accuracy (Acc.) and Quality (Qual.) scores. Bold values represent the best performance in each column.
 
+Of course, here are the tables in Markdown format.
+
+## Table 1: Accuracy (Acc.) Scores
+
+| Model | Entity | Idiom | Scientific | Textual Image |
+| :--- | :---: | :---: | :---: | :---: |
+| Bagel | 36.9 | 29.7 | 40.2 | 40.49 |
+| Bagel+SFT | 38.4 | 35.1 | 40.3 | 41.2 |
+| Bagel+SRUM | 40.9 | 36.1 | 40.7 | 42.86 |
+
+## Table 2: Quality (Qual.) Scores
+
+| Model | Entity | Idiom | Scientific | Textual Image |
+| :--- | :---: | :---: | :---: | :---: |
+| Bagel | 88.1 | 77.3 | 69.5 | 71.5 |
+| Bagel+SFT | 86.9 | 78.4 | 68.9 | 70.0 |
+| Bagel+SRUM | 88.7 | 80.2 | 69.2 | 72.6 |
+
+### 3. World Knowledge
+
+<p align="center"><img src="assets/wise.jpg" width="95%"></p>
 
 ## ✍️ Citation
 
 ```bibtex
 @article{deng2025bagel,
-  title   = {SRUM: Fine-Grained Self-Rewarding for Unified Models},
-  author  = {Jin, Weiyang and Niu, Yuwei and Liao, Jiaqi and Duan, Chengqi and Liu, Xihui},
+  title   = {SRUM: Fine-Grained Self-Rewarding for Unified Multimodal Models},
+  author  = {Jin, Weiyang and Niu, Yuwei and Liao, Jiaqi and Duan, Chengqi and Li, Aoxue and Gao, Shenghua and Liu, Xihui},
   journal = {arXiv preprint arXiv:2509.xxxx},
   year    = {2025}
 }
 ```
-
 
 ## 📜 License
 BAGEL is licensed under the Apache 2.0.
