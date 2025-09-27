@@ -91,7 +91,7 @@ for VARIANT in "${VARIANTS[@]}"; do
         fi
 
         # Execute the Python evaluation script
-        python comp_eval/qwen_comp_eval.py \
+        python comp_eval/qwen_eval.py \
             --image_path "$IMAGE_PATH" \
             --category "$PYTHON_CATEGORY_ARG" \
             --output_csv "$OUTPUT_CSV" \
