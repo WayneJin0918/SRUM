@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # =================================================================
+# =================================================================
 # Configuration Area: Please modify these variables for your environment
 # =================================================================
 
-# 1. Number of GPUs to use for Tensor Parallelism
+# 1. Number of GPUs to use for parallel evaluation
 NUM_GPUS=8
 
 # 2. Base directory containing all category folders
@@ -14,9 +15,7 @@ BASE_RESULTS_DIR="SRUM/comp_eval/rft_comp_2_round_hf_image"
 OUTPUT_DIR="SRUM/comp_eval/rft_comp_2_round_hf_eval"
 
 # 4. Model ID or path
-MODEL_ID="checkpoints/Qwen2.5-VL-72B-Instruct"
-# Or you can change to MODEL_ID="checkpoints/Qwen2.5-VL-32B-Instruct" duo to memory limitations
-
+MODEL_ID="checkpoints/Qwen2.5-VL-32B-Instruct"
 BATCH_SIZE=1
 
 # 5. Filename for the summary results
@@ -51,9 +50,9 @@ fi
 
 # Record the start time
 START_TIME=$(date +%s)
-echo "Automated comparison evaluation started with DeepSpeed..."
+echo "Automated evaluation started in parallel mode..."
 echo "Model: $MODEL_ID"
-echo "Using $NUM_GPUS GPUs for Tensor Parallelism."
+echo "Using $NUM_GPUS GPUs for parallel execution."
 echo "------------------------------------------------"
 
 # Initialize the summary CSV file with a header
@@ -88,9 +87,24 @@ for VARIANT in "${VARIANTS[@]}"; do
         echo "Evaluating Category: '$CATEGORY' | Variant: '$VARIANT'"
         echo "================================================="
 
-        # Define output and log file paths for the current run
-        OUTPUT_CSV="$OUTPUT_DIR/${CATEGORY_FILENAME_FRIENDLY}_${VARIANT_FILENAME_FRIENDLY}_results.csv"
-        LOG_FILE="$OUTPUT_DIR/${CATEGORY_FILENAME_FRIENDLY}_${VARIANT_FILENAME_FRIENDLY}_run.log"
+        # --- MODIFIED PARALLEL EXECUTION LOGIC ---
+        
+        # 1. Count total images to divide the workload
+        IMAGE_DIR_TO_SCAN="$IMAGE_PATH/samples"
+        if [ ! -d "$IMAGE_DIR_TO_SCAN" ]; then
+            IMAGE_DIR_TO_SCAN="$IMAGE_PATH"
+        fi
+        
+        TOTAL_IMAGES=$(find "$IMAGE_DIR_TO_SCAN" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.bmp" -o -iname "*.webp" \) | wc -l)
+        if [ "$TOTAL_IMAGES" -eq 0 ]; then
+            echo "Warning: No images found in $IMAGE_DIR_TO_SCAN. Skipping category '$CATEGORY'."
+            continue
+        fi
+        echo "Found $TOTAL_IMAGES images. Distributing workload across $NUM_GPUS GPUs."
+        
+        IMAGES_PER_GPU=$(( (TOTAL_IMAGES + NUM_GPUS - 1) / NUM_GPUS )) # Ceiling division
+        PARTIAL_CSVS=()
+        PARTIAL_LOGS=()
 
         # Handle special category argument for the Python script
         PYTHON_CATEGORY_ARG=$CATEGORY
@@ -98,33 +112,65 @@ for VARIANT in "${VARIANTS[@]}"; do
             PYTHON_CATEGORY_ARG="complex"
         fi
 
-        # Execute the Python evaluation script using the Deepspeed launcher
-        deepspeed --include="localhost:0,1,2,3,4,5,6,7" "$PYTHON_SCRIPT" \
-            --image_path "$IMAGE_PATH" \
-            --category "$PYTHON_CATEGORY_ARG" \
-            --output_csv "$OUTPUT_CSV" \
-            --log_file "$LOG_FILE" \
-            --model_id "$MODEL_ID" \
-            --batch_size "$BATCH_SIZE"
+        # 2. Launch background jobs for each GPU
+        for GPU_ID in $(seq 0 $((NUM_GPUS - 1))); do
+            START_INDEX=$(( GPU_ID * IMAGES_PER_GPU ))
+            END_INDEX=$(( START_INDEX + IMAGES_PER_GPU ))
 
-        echo "Evaluation complete. Results saved in $OUTPUT_CSV"
-        echo "Log saved in $LOG_FILE"
-
-        # Calculate the mean score from the output CSV and append to the summary file
-        # The Python script now handles summary generation internally, but we can keep this as a fallback
-        # Let's use the summary from the python script's log instead.
-        if [ -f "$OUTPUT_CSV" ]; then
-            # We can parse the final score from the log file, which is more robust.
-            # The python script now logs the final average score.
-            MEAN_SCORE=$(grep "Average Score for this run:" "$LOG_FILE" | awk '{print $NF}')
-            if [ -z "$MEAN_SCORE" ]; then
-                # Fallback to awk on the CSV if grep fails
-                MEAN_SCORE=$(awk -F, 'BEGIN{total=0; count=0} /^[^#]/ && NR > 1 { if ($4 >= 0) { total+=$4; count++ } } END{if(count>0) printf "%.4f", total/count; else print "0.0000"}' "$OUTPUT_CSV")
+            if [ "$START_INDEX" -ge "$TOTAL_IMAGES" ]; then
+                continue # Skip creating jobs if there's no work for this GPU
             fi
+
+            PARTIAL_OUTPUT_CSV="$OUTPUT_DIR/${CATEGORY_FILENAME_FRIENDLY}_${VARIANT_FILENAME_FRIENDLY}_gpu${GPU_ID}_results.csv"
+            PARTIAL_LOG_FILE="$OUTPUT_DIR/${CATEGORY_FILENAME_FRIENDLY}_${VARIANT_FILENAME_FRIENDLY}_gpu${GPU_ID}_run.log"
+            PARTIAL_CSVS+=("$PARTIAL_OUTPUT_CSV")
+            PARTIAL_LOGS+=("$PARTIAL_LOG_FILE")
+
+            echo "  -> Launching job on GPU $GPU_ID for images [$START_INDEX-$END_INDEX)"
+            
+            CUDA_VISIBLE_DEVICES=$GPU_ID python "$PYTHON_SCRIPT" \
+                --image_path "$IMAGE_PATH" \
+                --category "$PYTHON_CATEGORY_ARG" \
+                --output_csv "$PARTIAL_OUTPUT_CSV" \
+                --log_file "$PARTIAL_LOG_FILE" \
+                --model_id "$MODEL_ID" \
+                --batch_size "$BATCH_SIZE" \
+                --start "$START_INDEX" \
+                --end "$END_INDEX" &
+        done
+
+        # 3. Wait for all background jobs for this category to finish
+        echo "Waiting for all jobs in '$CATEGORY' ($VARIANT) to complete..."
+        wait
+        echo "All jobs for '$CATEGORY' ($VARIANT) finished."
+
+        # 4. Aggregate results from all partial files
+        FINAL_OUTPUT_CSV="$OUTPUT_DIR/${CATEGORY_FILENAME_FRIENDLY}_${VARIANT_FILENAME_FRIENDLY}_results.csv"
+        FINAL_LOG_FILE="$OUTPUT_DIR/${CATEGORY_FILENAME_FRIENDLY}_${VARIANT_FILENAME_FRIENDLY}_run.log"
+
+        echo "Aggregating results into $FINAL_OUTPUT_CSV"
+        # Smartly combine CSVs: print header from the first file, then all data rows from all files
+        awk 'FNR==1 && NR!=1 {next} {print}' "${PARTIAL_CSVS[@]}" > "$FINAL_OUTPUT_CSV"
+        # Combine logs for easier debugging
+        cat "${PARTIAL_LOGS[@]}" > "$FINAL_LOG_FILE"
+
+        # 5. Clean up partial files
+        echo "Cleaning up partial files..."
+        rm "${PARTIAL_CSVS[@]}"
+        rm "${PARTIAL_LOGS[@]}"
+
+        echo "Evaluation complete. Results saved in $FINAL_OUTPUT_CSV"
+        echo "Log saved in $FINAL_LOG_FILE"
+
+        # Calculate the mean score from the final aggregated CSV
+        if [ -f "$FINAL_OUTPUT_CSV" ]; then
+            # This awk command calculates the mean score directly and robustly from the final CSV
+            # It ignores the header (NR>1) and any summary lines starting with '#'
+            MEAN_SCORE=$(awk -F, 'BEGIN{total=0; count=0} /^[^#]/ && NR > 1 { if ($4 >= 0) { total+=$4; count++ } } END{if(count>0) printf "%.4f", total/count; else print "0.0000"}' "$FINAL_OUTPUT_CSV")
             echo "Calculated Mean Score for '$CATEGORY' ($VARIANT): $MEAN_SCORE"
             echo "$VARIANT,$CATEGORY,$MEAN_SCORE" >> "$SUMMARY_CSV"
         else
-            echo "Warning: Output file $OUTPUT_CSV not found. Cannot calculate mean score."
+            echo "Warning: Output file $FINAL_OUTPUT_CSV not found. Cannot calculate mean score."
             echo "$VARIANT,$CATEGORY,0" >> "$SUMMARY_CSV"
         fi
     done

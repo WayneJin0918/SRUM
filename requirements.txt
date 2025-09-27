@@ -37,7 +37,6 @@ crcmod==1.7
 cryptography==45.0.5
 cycler==0.12.1
 cymem==2.0.11
-deepspeed==0.17.6
 decord==0.6.0
 defusedxml==0.7.1
 distro==1.9.0
