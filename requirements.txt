@@ -37,6 +37,7 @@ crcmod==1.7
 cryptography==45.0.5
 cycler==0.12.1
 cymem==2.0.11
+deepspeed==0.17.6
 decord==0.6.0
 defusedxml==0.7.1
 distro==1.9.0
@@ -118,6 +119,7 @@ python-dotenv==1.1.1
 python-multipart==0.0.20
 pytz==2023.4
 pyyaml==6.0.2
+qwen-vl-utils==0.0.14
 regex==2024.11.6
 requests==2.28.2
 requests-toolbelt==1.0.0
