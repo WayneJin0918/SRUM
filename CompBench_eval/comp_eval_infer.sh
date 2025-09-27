@@ -5,11 +5,11 @@
 # =================================================================
 
 # 1. Path to the fine-tuned model weights
-MODEL_PATH="SRUM/results/hf_weights/rft_comp_2_round_hf"
+MODEL_PATH="SRUM/results/hf_weights/rft_comp"
 
 # 2. Base directory where category subfolders will be created for the output images
 #    This path is structured to align with evaluation script requirements.
-BASE_OUTPUT_DIR="SRUM/comp_eval/rft_comp_2_round_hf_image"
+BASE_OUTPUT_DIR="SRUM/comp_eval/rft_comp_image"
 
 # 3. Path to the input metadata file for validation
 METADATA_FILE="SRUM/val_comp.json"
@@ -46,6 +46,7 @@ CATEGORIES=(
     "numeracy"
     "shape"
     "texture"
+    "spatial"
 )
 
 # Record the start time

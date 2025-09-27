@@ -5,10 +5,10 @@
 # =================================================================
 
 # 1. Base directory containing all category folders
-BASE_RESULTS_DIR="SRUM/comp_eval/rft_comp_2_round_hf_image"
+BASE_RESULTS_DIR="SRUM/comp_eval/rft_comp_image"
 
 # 2. Output directory for evaluation results
-OUTPUT_DIR="SRUM/comp_eval/rft_comp_2_round_hf_eval"
+OUTPUT_DIR="SRUM/comp_eval/rft_comp_eval"
 
 # 3. Model and other parameters
 MODEL_ID="checkpoints/Qwen2.5-VL-72B-Instruct"
@@ -27,7 +27,7 @@ SUMMARY_CSV="$OUTPUT_DIR/summary_results.csv"
 VARIANTS=("think" "no think")
 
 # Define all CompBench categories to be evaluated
-BASE_CATEGORIES=("color" "shape" "texture" "spatial" "nonspatial" "numeracy" "3d spatial")
+BASE_CATEGORIES=("color" "shape" "texture" "spatial" "non-spatial" "numeracy" "3d spatial")
 COMPLEX_PREFIXES=("complex" "complex action" "complex spatial")
 
 # Check and create the output directory
