@@ -225,7 +225,7 @@ See [TRAIN](TRAIN.md) for more details.
 Bagel provide the scripts for evaluating VLM, T2I and Editing benchmarks. 
 Please See [EVAL](EVAL.md) for more details.
 
-And if you want eval on T2I-CompBench, referring using file in `SRUM/CompBench_eval`, it is easy to start.
+And if you want eval on T2I-CompBench, referring using file in `SRUM/CompBench_eval`, it is easy to start. We highly recommend use `Qwen2.5-VL-72B-Instruct` for evaluation, but you also can use `Qwen2.5-VL-32B-Instruct` for instead when having not enough memory, the conclusions and overall scores are similar.
 
 
 ## 📊 Benchmarks

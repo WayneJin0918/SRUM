@@ -12,6 +12,7 @@ OUTPUT_DIR="SRUM/comp_eval/rft_comp_eval"
 
 # 3. Model and other parameters
 MODEL_ID="checkpoints/Qwen2.5-VL-72B-Instruct"
+# MODEL_ID="checkpoints/Qwen2.5-VL-32B-Instruct" You can also use 32B when having not enough memory
 BATCH_SIZE=8
 NUM_WORKERS=2
 
