@@ -228,6 +228,20 @@ Please See [EVAL](EVAL.md) for more details.
 
 And if you want eval on T2I-CompBench, referring using file in `SRUM/CompBench_eval`, it is easy to start. We highly recommend use `Qwen2.5-VL-72B-Instruct` for evaluation, but you also can use `Qwen2.5-VL-32B-Instruct` for instead when having not enough memory, the conclusions and overall scores are similar.
 
+Then, run the following command:
+
+```shell
+bash CompBench_eval/comp_eval_infer.sh
+```
+
+the image output will be saved in `BASE_OUTPUT_DIR`.
+
+```shell
+bash CompBench_eval/qwen_eval.sh
+```
+
+the score output will be saved in `OUTPUT_DIR`.
+
 
 ## 📊 Benchmarks
 

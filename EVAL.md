@@ -59,16 +59,53 @@ Directly run `scripts/eval/run_geneval.sh` to evaluate GenEVAL. The output will 
 
 
 # WISE
-We modify the code in [WISE](https://github.com/PKU-YuanGroup/WISE/tree/main) for faster evaluation.
-
+Use the code in [WISE](https://github.com/PKU-YuanGroup/WISE/tree/main) for evaluation.
 
 ## Evaluation
-Directly run `scripts/eval/run_wise.sh` to evaluate WISE. The output will be saved in `$output_path`.
-- Set `$model_path` and `$output_path` for the path for checkpoint and log.
-- Set `$openai_api_key` in `scripts/eval/run_wise.sh` and `your_api_url` in `eval/gen/wise/gpt_eval_mp.py`. The default GPT version is `gpt-4o-2024-11-20`.
+First, set the `IMAGE_DIR` variable to the directory where your model's generated images are saved. The image names should be in the format `1-1000.png`.
 - Use `think` for thinking mode.
 
+Then, run the `gpt_eval.py` script for each category. Remember to replace "" with your actual API key.
+```python
+python gpt_eval.py \
+    --json_path data/cultural_common_sense.json \
+    --output_dir ${IMAGE_DIR}/Results/cultural_common_sense \
+    --image_dir ${IMAGE_DIR} \
+    --api_key "" \
+    --model "gpt-4o-2024-05-13" \
+    --result_full ${IMAGE_DIR}/Results/cultural_common_sense_full_results.json \
+    --result_scores ${IMAGE_DIR}/Results/cultural_common_sense_scores_results.jsonl \
+    --max_workers 96
 
+python gpt_eval.py \
+    --json_path data/spatio-temporal_reasoning.json \
+    --output_dir ${IMAGE_DIR}/Results/spatio-temporal_reasoning \
+    --image_dir ${IMAGE_DIR} \
+    --api_key "" \
+    --model "gpt-4o-2024-05-13" \
+    --result_full ${IMAGE_DIR}/Results/spatio-temporal_reasoning_results.json \
+    --result_scores ${IMAGE_DIR}/Results/spatio-temporal_reasoning_results.jsonl \
+    --max_workers 96
+
+python gpt_eval.py \
+    --json_path data/natural_science.json \
+    --output_dir ${IMAGE_DIR}/Results/natural_science \
+    --image_dir ${IMAGE_DIR} \
+    --api_key "" \
+    --model "gpt-4o-2024-05-13" \
+    --result_full ${IMAGE_DIR}/Results/natural_science_full_results.json \
+    --result_scores ${IMAGE_DIR}/Results/natural_science_scores_results.jsonl \
+    --max_workers 96
+```
+
+After running the evaluations, use `Calculate.py` to compute the scores.
+```python
+python Calculate.py \
+    "${IMAGE_DIR}/Results/cultural_common_sense_scores_results.jsonl" \
+    "${IMAGE_DIR}/Results/natural_science_scores_results.jsonl" \
+    "${IMAGE_DIR}/Results/spatio-temporal_reasoning_results.jsonl" \
+    --category all
+```
 
 # GEdit-Bench
 We adopt the code in [GEdit-Bench](https://github.com/stepfun-ai/Step1X-Edit/blob/main/GEdit-Bench/EVAL.md) for evaluation.
