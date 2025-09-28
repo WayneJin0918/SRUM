@@ -96,6 +96,7 @@ Or you can follow the settings of Bagel
 
 2️⃣  Download Bagel pretrained or our SRUM checkpoint
 ```python
+#bagel
 from huggingface_hub import snapshot_download
 
 save_dir = "models/BAGEL-7B-MoT"
@@ -112,6 +113,23 @@ snapshot_download(cache_dir=cache_dir,
 
 ```
 
+```python
+#SRUM
+from huggingface_hub import snapshot_download
+
+save_dir = "models/SRUM_BAGEL_7B_MoT"
+repo_id = "Wayne-King/SRUM_BAGEL_7B_MoT"
+cache_dir = save_dir + "/cache"
+
+snapshot_download(cache_dir=cache_dir,
+  local_dir=save_dir,
+  repo_id=repo_id,
+  local_dir_use_symlinks=False,
+  resume_download=True,
+  allow_patterns=["*.json", "*.safetensors", "*.bin", "*.py", "*.md", "*.txt"],
+)
+
+```
 <!-- 3️⃣ Use Gradio WebUI to start playing with BAGEL!
 ```bash
 # For 32GB+ VRAM GPU or multi GPUs.
@@ -182,23 +200,6 @@ regional_reward:
   num_used_data: # The sum should be larger that NUM_GPUS x NUM_WORKERS
   - 8
   weight: 1
-
-```
-
-```python
-from huggingface_hub import snapshot_download
-
-save_dir = "models/BAGEL-7B-MoT"
-repo_id = "ByteDance-Seed/BAGEL-7B-MoT"
-cache_dir = save_dir + "/cache"
-
-snapshot_download(cache_dir=cache_dir,
-  local_dir=save_dir,
-  repo_id=repo_id,
-  local_dir_use_symlinks=False,
-  resume_download=True,
-  allow_patterns=["*.json", "*.safetensors", "*.bin", "*.py", "*.md", "*.txt"],
-)
 
 ```
 
