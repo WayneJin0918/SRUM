@@ -9,13 +9,13 @@
 NUM_GPUS=8
 
 # 2. Base directory containing all category folders
-BASE_RESULTS_DIR="SRUM/comp_eval/rft_comp_2_round_hf_image"
+BASE_RESULTS_DIR="/SRUM/comp_eval/rft_comp_1_round_hf_image"
 
 # 3. Output directory for evaluation results
-OUTPUT_DIR="SRUM/comp_eval/rft_comp_2_round_hf_eval"
+OUTPUT_DIR="/SRUM/comp_eval/rft_comp_1_round_hf_eval"
 
 # 4. Model ID or path
-MODEL_ID="checkpoints/Qwen2.5-VL-32B-Instruct"
+MODEL_ID="/checkpoints/Qwen2.5-VL-32B-Instruct"
 BATCH_SIZE=1
 
 # 5. Filename for the summary results
@@ -162,11 +162,10 @@ for VARIANT in "${VARIANTS[@]}"; do
         echo "Evaluation complete. Results saved in $FINAL_OUTPUT_CSV"
         echo "Log saved in $FINAL_LOG_FILE"
 
-        # Calculate the mean score from the final aggregated CSV
+        # Calculate the mean score using the robust Python script
         if [ -f "$FINAL_OUTPUT_CSV" ]; then
-            # This awk command calculates the mean score directly and robustly from the final CSV
-            # It ignores the header (NR>1) and any summary lines starting with '#'
-            MEAN_SCORE=$(awk -F, 'BEGIN{total=0; count=0} /^[^#]/ && NR > 1 { if ($4 >= 0) { total+=$4; count++ } } END{if(count>0) printf "%.4f", total/count; else print "0.0000"}' "$FINAL_OUTPUT_CSV")
+            # Call the python script to calculate the mean from the 'score' column
+            MEAN_SCORE=$(python calculate_mean.py "$FINAL_OUTPUT_CSV")
             echo "Calculated Mean Score for '$CATEGORY' ($VARIANT): $MEAN_SCORE"
             echo "$VARIANT,$CATEGORY,$MEAN_SCORE" >> "$SUMMARY_CSV"
         else
