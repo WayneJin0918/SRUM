@@ -125,33 +125,6 @@ def save_to_csv(results: List[Dict], output_path: str):
     df.to_csv(output_path, index=False, encoding='utf-8-sig')
     logging.info(f"Successfully saved {len(df)} results to {output_path}")
 
-    # Calculate summary statistics
-    df['score'] = pd.to_numeric(df['score'], errors='coerce')
-    valid_scores_df = df[df['score'] >= 0]
-    total_count = len(df)
-    successful_count = len(valid_scores_df)
-    error_count = total_count - successful_count
-    avg_score = valid_scores_df['score'].mean() if successful_count > 0 else 0
-
-    # Prepare statistics string to append to the CSV
-    stats_header = "\n\n# --- Evaluation Summary --- #"
-    stats_body = (
-        f"\nTotal Items Evaluated,{total_count}\n"
-        f"Successfully Scored,{successful_count}\n"
-        f"Errors (Score=-1),{error_count}\n\n"
-        f"Metric,Average Score\n"
-        f"Overall Score,{avg_score:.4f}\n"
-    )
-
-    # Append statistics to the end of the CSV file
-    try:
-        with open(output_path, 'a', encoding='utf-8-sig', newline='') as f:
-            f.write(stats_header)
-            f.write(stats_body)
-        logging.info("Successfully appended summary statistics.")
-    except Exception:
-        logging.exception(f"Could not append statistics to CSV: {output_path}")
-
 def process_batch(batch_data: List[Dict], model, processor) -> List[Dict]:
     """Processes a single batch of data: prepares input, runs inference, and parses output."""
     batch_results, messages_batch = [], []
