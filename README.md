@@ -17,16 +17,29 @@
   </a>
   <a href="https://huggingface.co/Wayne-King/SRUM_BAGEL_7B_MoT">
     <img 
-        src="https://img.shields.io/badge/SRUM-Model-yellow" 
+        src="https://img.shields.io/badge/SRUM-HF%20Model-yellow" 
         alt="SRUM Model"
     />
   </a>
   <a href="https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train">
     <img 
-        src="https://img.shields.io/badge/SRUM-Datasets-yellow" 
+        src="https://img.shields.io/badge/SRUM-HF%20Datasets-yellow" 
+        alt="SRUM Data"
+    />
+  </a>
+  <a href="https://www.modelscope.cn/models/SOTAowner/SRUM_7B_BAGEL">
+    <img 
+        src="https://img.shields.io/badge/SRUM-MS%20Model-8A2BE2" 
         alt="SRUM Model"
     />
   </a>
+  <a href="https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train">
+    <img 
+        src="https://img.shields.io/badge/SRUM-MS%20Datasets-8A2BE2" 
+        alt="SRUM Model"
+    />
+  </a>
+
 </p>
 
 # SRUM: Fine-Grained Self-Rewarding for Unified Multimodal Models
@@ -185,6 +198,8 @@ Now, you have jsonl file `your_vlm_output.jsonl` and image folder `./your_images
 
 ```
 
+Or you can directly use our [HF training data](https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train) in huggingface or [MS training data](https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train) in modelscape.
+
 2️⃣  Starting training
 
 Down the base model. Then, add yaml file: `scripts/data/rft_comp.yaml`.
@@ -300,4 +315,4 @@ Of course, here are the tables in Markdown format.
 ```
 
 ## 📜 License
-BAGEL is licensed under the Apache 2.0.
+SRUM is licensed under the Apache 2.0.
