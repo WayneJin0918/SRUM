@@ -22,7 +22,7 @@ def setup_logging(log_file):
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    file_handler = logging.FileHandler(log_file, mode='w', encoding='utf-8')
+    file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -37,13 +37,11 @@ def run_analysis_on_gpu(process_id, gpu_id, records_chunk, args):
     """
     Target function to run the core logic of vlm_analysis.py on a specified GPU.
     """
-    # Each child process configures its own logger to avoid file handle conflicts
     if args.log_file:
         setup_logging(args.log_file)
     
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
     
-    # --- MODIFIED: Import the updated vlm_analysis.py (assuming it's renamed to vlm.py) ---
     try:
         from vlm import main as vlm_main
     except ImportError:
@@ -61,7 +59,6 @@ def run_analysis_on_gpu(process_id, gpu_id, records_chunk, args):
     sub_args = copy.deepcopy(args)
     sub_args.input_jsonl = str(tmp_input_jsonl)
     sub_args.output_jsonl = str(tmp_output_jsonl)
-    sub_args.overwrite = True # Child processes always overwrite their own temporary files
 
     logging.info(f"Process-{process_id} starting analysis with {len(records_chunk)} images on GPU {gpu_id}.")
     try:
@@ -110,52 +107,118 @@ def main():
     
     setup_logging(args.log_file)
 
+    output_dir = Path(os.path.dirname(args.output_jsonl))
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    completed_ids = set()
+    UNIQUE_KEY = 'image_file'  
+
+    # Calculate total potential processes to determine temp filenames
+    num_gpus_avail = min(args.num_gpus, torch.cuda.device_count()) if torch.cuda.is_available() else 1
+    total_processes = num_gpus_avail * args.processes_per_gpu
+
+    if args.overwrite:
+        logging.warning(f"Overwrite flag is set. Removing existing output and temporary files.")
+        if os.path.exists(args.output_jsonl):
+            os.remove(args.output_jsonl)
+        for i in range(total_processes):
+            tmp_file = output_dir / f"tmp_rewards_proc_{i}.jsonl"
+            if tmp_file.exists():
+                os.remove(tmp_file)
+    else:
+        # --- MODIFIED: More Robust Resume Logic ---
+        # 1. Check final output file for completed work
+        if os.path.exists(args.output_jsonl):
+            logging.info(f"Checking final output for completed records: {args.output_jsonl}")
+            try:
+                with open(args.output_jsonl, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        try:
+                            record = json.loads(line)
+                            if UNIQUE_KEY in record:
+                                completed_ids.add(record[UNIQUE_KEY])
+                        except json.JSONDecodeError:
+                            continue # Skip malformed lines
+                logging.info(f"Found {len(completed_ids)} records in the final output file.")
+            except Exception as e:
+                logging.error(f"Could not read existing output file. Please fix or use --overwrite. Error: {e}")
+                return
+
+        # 2. ALSO check temporary files for any work from a previous crashed run
+        temp_ids_found = 0
+        for i in range(total_processes):
+            tmp_file = output_dir / f"tmp_rewards_proc_{i}.jsonl"
+            if tmp_file.exists():
+                try:
+                    with open(tmp_file, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            try:
+                                record = json.loads(line)
+                                if UNIQUE_KEY in record and record[UNIQUE_KEY] not in completed_ids:
+                                    completed_ids.add(record[UNIQUE_KEY])
+                                    temp_ids_found += 1
+                            except json.JSONDecodeError:
+                                continue # Skip malformed lines
+                except Exception as e:
+                    logging.warning(f"Could not read temporary file {tmp_file}. It might be corrupted. Skipping. Error: {e}")
+        if temp_ids_found > 0:
+            logging.info(f"Found {temp_ids_found} additional records in leftover temporary files.")
+        
+        if completed_ids:
+             logging.info(f"Total unique completed records found: {len(completed_ids)}. These will be skipped.")
+
     logging.info(f"Reading input metadata from {args.input_jsonl}...")
     with open(args.input_jsonl, "r", encoding="utf-8") as f:
         all_records = [json.loads(line) for line in f]
 
-    num_gpus = min(args.num_gpus, torch.cuda.device_count())
-    if num_gpus == 0:
-        logging.critical("No GPUs detected. Aborting.")
-        raise ConnectionError("No GPUs detected.")
+    # Filter out records that have already been processed
+    if completed_ids:
+        original_count = len(all_records)
+        records_to_process = [r for r in all_records if r.get(UNIQUE_KEY) not in completed_ids]
+        logging.info(f"Filtered records: {len(records_to_process)} to process out of {original_count} total.")
+    else:
+        records_to_process = all_records
     
-    total_processes = num_gpus * args.processes_per_gpu
-    chunks = [all_records[i::total_processes] for i in range(total_processes)]
-    logging.info(f"Distributing {len(all_records)} records across {total_processes} processes on {num_gpus} GPUs ({args.processes_per_gpu} processes/GPU).")
-
-    output_dir = Path(os.path.dirname(args.output_jsonl))
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Clean up any stale temporary files from previous runs
-    for i in range(total_processes):
-        tmp_file = output_dir / f"tmp_rewards_proc_{i}.jsonl"
-        if tmp_file.exists():
-            logging.warning(f"Removing stale temporary file: {tmp_file}")
-            os.remove(tmp_file)
-
-    processes = []
-    for i in range(total_processes):
-        if not chunks[i]:
-            continue
+    if not records_to_process:
+        logging.info("All records have already been processed. Consolidating any remaining temp files and exiting.")
+        # Fall through to the consolidation step to clean up any temp files, then exit.
+    else:
+        # --- This part runs only if there's work to do ---
+        num_gpus = min(args.num_gpus, torch.cuda.device_count())
+        if num_gpus == 0:
+            logging.critical("No GPUs detected. Aborting.")
+            raise ConnectionError("No GPUs detected.")
         
-        gpu_id_for_process = i % num_gpus
-        records_chunk = chunks[i]
-        
-        p = multiprocessing.Process(
-            target=run_analysis_on_gpu, 
-            args=(i, gpu_id_for_process, records_chunk, args),
-            name=f"Process-{i}"
-        )
-        p.start()
-        processes.append(p)
+        # Recalculate total_processes in case GPU count was 0 before
+        total_processes = num_gpus * args.processes_per_gpu
+        chunks = [records_to_process[i::total_processes] for i in range(total_processes)]
+        logging.info(f"Distributing {len(records_to_process)} records across {total_processes} processes on {num_gpus} GPUs.")
 
-    for p in processes:
-        p.join()
+        processes = []
+        for i in range(total_processes):
+            if not chunks[i]:
+                continue
+            
+            gpu_id_for_process = i % num_gpus
+            records_chunk = chunks[i]
+            
+            p = multiprocessing.Process(
+                target=run_analysis_on_gpu, 
+                args=(i, gpu_id_for_process, records_chunk, args),
+                name=f"Process-{i}"
+            )
+            p.start()
+            processes.append(p)
 
-    logging.info("All VLM analysis processes have completed.")
+        for p in processes:
+            p.join()
+
+        logging.info("All VLM analysis processes have completed.")
     
-    logging.info(f"Consolidating results into {args.output_jsonl}...")
-    final_write_mode = "w" if args.overwrite else "a"
+    # --- Final Consolidation (runs always to ensure cleanup) ---
+    logging.info(f"Consolidating all results into {args.output_jsonl}...")
+    final_write_mode = "a" if not args.overwrite and os.path.exists(args.output_jsonl) else "w"
+    
     with open(args.output_jsonl, final_write_mode, encoding="utf-8") as final_f:
         for i in range(total_processes):
             tmp_path = output_dir / f"tmp_rewards_proc_{i}.jsonl"
@@ -164,10 +227,9 @@ def main():
                     final_f.write(tmp_f.read())
                 os.remove(tmp_path) 
 
-    logging.info(f"Successfully created consolidated rewards file at: {args.output_jsonl}")
+    logging.info(f"Successfully created/updated consolidated rewards file at: {args.output_jsonl}")
 
 
 if __name__ == "__main__":
-    # "spawn" is the recommended start method for CUDA multiprocessing to avoid fork-related issues.
     multiprocessing.set_start_method("spawn", force=True)
     main()
