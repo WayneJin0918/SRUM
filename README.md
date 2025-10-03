@@ -67,7 +67,7 @@ As we scale up BAGEL’s pretraining with more multimodal tokens, we observe con
 
 We sincerely thank all contributors from the open community for their valuable support.
 
-- **Sept. 25, 2025:** We released the official [website](https://waynejin0918.github.io/srum_web/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for SRUM.
+- **Nov. 04, 2025:** We released the official [website](https://waynejin0918.github.io/srum_web/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for SRUM.
 
 
 ## 📮 Notice
