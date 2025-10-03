@@ -283,13 +283,14 @@ the score output will be saved in `OUTPUT_DIR`.
 
 ### 2. Reasoning-informed
 
-## Table 1: Performance comparison of Bagel models across four categories and their average scores. **Bold values** indicate the best performance in each column.*
 
 | **Model** | **Entity** | **Idiom** | **Scientific** | **Textual Image** | **Average** |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | Bagel | 49.70 | 34.46 | 47.52 | 43.59 | 43.82 |
 | Bagel+SFT | 50.53 | 39.43 | 47.45 | 44.08 | 45.37 |
 | Bagel+SRUM | **52.85** | **40.51** | **47.83** | **45.83** | **46.75** |
+
+*Performance comparison of Bagel models across four categories and their average scores. **Bold values** indicate the best performance in each column.*
 
 ## ✍️ Citation
 
