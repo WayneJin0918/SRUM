@@ -33,7 +33,7 @@
         alt="SRUM Model"
     />
   </a>
-  <a href="https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train">
+  <a href="https://www.modelscope.cn/datasets/SOTAowner/SRUM_image_t2i_comp_6k">
     <img 
         src="https://img.shields.io/badge/SRUM-MS%20Datasets-8A2BE2" 
         alt="SRUM Model"
