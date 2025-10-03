@@ -283,25 +283,13 @@ the score output will be saved in `OUTPUT_DIR`.
 
 ### 2. Reasoning-informed
 
-Bagel Model: Detailed Evaluation ResultsDetailed evaluation results of the Bagel model for different categories, separated into Accuracy (Acc.) and Quality (Qual.) scores. Bold values represent the best performance in each column.
+## Table 1: Performance comparison of Bagel models across four categories and their average scores. **Bold values** indicate the best performance in each column.*
 
-Of course, here are the tables in Markdown format.
-
-## Table 1: Accuracy (Acc.) Scores
-
-| Model | Entity | Idiom | Scientific | Textual Image |
-| :--- | :---: | :---: | :---: | :---: |
-| Bagel | 36.9 | 29.7 | 40.2 | 40.49 |
-| Bagel+SFT | 38.4 | 35.1 | 40.3 | 41.2 |
-| Bagel+SRUM | 40.9 | 36.1 | 40.7 | 42.86 |
-
-## Table 2: Quality (Qual.) Scores
-
-| Model | Entity | Idiom | Scientific | Textual Image |
-| :--- | :---: | :---: | :---: | :---: |
-| Bagel | 88.1 | 77.3 | 69.5 | 71.5 |
-| Bagel+SFT | 86.9 | 78.4 | 68.9 | 70.0 |
-| Bagel+SRUM | 88.7 | 80.2 | 69.2 | 72.6 |
+| **Model** | **Entity** | **Idiom** | **Scientific** | **Textual Image** | **Average** |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Bagel | 49.70 | 34.46 | 47.52 | 43.59 | 43.82 |
+| Bagel+SFT | 50.53 | 39.43 | 47.45 | 44.08 | 45.37 |
+| Bagel+SRUM | **52.85** | **40.51** | **47.83** | **45.83** | **46.75** |
 
 ## ✍️ Citation
 
