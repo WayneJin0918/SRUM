@@ -298,7 +298,7 @@ the score output will be saved in `OUTPUT_DIR`.
 @article{deng2025bagel,
   title   = {SRUM: Fine-Grained Self-Rewarding for Unified Multimodal Models},
   author  = {Jin, Weiyang and Niu, Yuwei and Liao, Jiaqi and Duan, Chengqi and Li, Aoxue and Gao, Shenghua and Liu, Xihui},
-  journal = {arXiv preprint arXiv:2509.xxxx},
+  journal = {arXiv preprint arXiv:2510.12784},
   year    = {2025}
 }
 ```
