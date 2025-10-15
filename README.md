@@ -9,7 +9,7 @@
       alt="SRUM Website"
     />
   </a>
-  <a href="https://arxiv.org/abs/2509.xxxx">
+  <a href="https://arxiv.org/abs/2510.12784">
     <img
       src="https://img.shields.io/badge/SRUM-Paper-red"
       alt="SRUM Paper on arXiv"
@@ -67,7 +67,7 @@ As we scale up BAGEL’s pretraining with more multimodal tokens, we observe con
 
 We sincerely thank all contributors from the open community for their valuable support.
 
-- **Nov. 04, 2025:** We released the official [website](https://waynejin0918.github.io/srum_web/), [model](https://huggingface.co/ByteDance-Seed/BAGEL-7B-MoT), and [report](https://arxiv.org/abs/2505.14683) for SRUM.
+- **Nov. 15, 2025:** We released the official [website](https://waynejin0918.github.io/srum_web/), [model](https://huggingface.co/Wayne-King/SRUM_BAGEL_7B_MoT), and [report](https://arxiv.org/abs/2510.12784) for SRUM.
 
 
 ## 📮 Notice
