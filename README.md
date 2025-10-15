@@ -17,13 +17,13 @@
   </a>
   <a href="https://huggingface.co/Wayne-King/SRUM_BAGEL_7B_MoT">
     <img 
-        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Model-blue" 
+        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-blue" 
         alt="SRUM Model"
     />
   </a>
   <a href="https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train">
     <img 
-        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Datasets-blue" 
+        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Datasets-blue" 
         alt="SRUM Data"
     />
   </a>
