@@ -17,14 +17,20 @@
   </a>
   <a href="https://huggingface.co/Wayne-King/SRUM_BAGEL_7B_MoT">
     <img 
-        src="https://img.shields.io/badge/SRUM-HF%20Model-yellow" 
+        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Model-blue" 
         alt="SRUM Model"
     />
   </a>
   <a href="https://huggingface.co/datasets/Wayne-King/SRUM_6k_CompBench_Train">
     <img 
-        src="https://img.shields.io/badge/SRUM-HF%20Datasets-yellow" 
+        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Datasets-blue" 
         alt="SRUM Data"
+    />
+  </a>
+  <a href="https://huggingface.co/spaces/Wayne-King/SRUM_Bagel_MoT-7B">
+    <img 
+        src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue" 
+        alt="SRUM Demo"
     />
   </a>
   <a href="https://www.modelscope.cn/models/SOTAowner/SRUM_7B_BAGEL">
@@ -39,7 +45,6 @@
         alt="SRUM Model"
     />
   </a>
-
 </p>
 
 # SRUM: Fine-Grained Self-Rewarding for Unified Multimodal Models
