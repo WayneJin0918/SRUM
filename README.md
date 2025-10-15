@@ -3,12 +3,6 @@
 </p>
 
 <p align="center">
-  <a href="https://waynejin0918.github.io/srum_web/">
-    <img
-      src="https://img.shields.io/badge/SRUM-Website-blue"
-      alt="SRUM Website"
-    />
-  </a>
   <a href="https://arxiv.org/abs/2510.12784">
     <img
       src="https://img.shields.io/badge/SRUM-Paper-red"
