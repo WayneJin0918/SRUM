@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/log.png" alt="SRUM" width="350"/>
+  <img src="assets/logo_srum.png" alt="SRUM" width="350"/>
 </p>
 
 <p align="center">
