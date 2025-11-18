@@ -175,10 +175,88 @@ for VARIANT in "${VARIANTS[@]}"; do
     done
 done
 
-# Calculate the overall average from the summary file
-OVERALL_AVERAGE=$(awk -F, 'NR > 1 { total += $3; count++ } END { if (count > 0) print total/count; else print 0 }' "$SUMMARY_CSV")
-echo "" >> "$SUMMARY_CSV" # Add a blank line for readability
-echo "Overall_Average,,$OVERALL_AVERAGE" >> "$SUMMARY_CSV"
+# =================================================================
+# Step 6: Calculate Weighted Overall Score (awk version)
+# =================================================================
+# Logic: 
+# 1. Group "complex", "complex action", "complex spatial" -> Calculate their average (Complex_Composite)
+# 2. Combine (Complex_Composite) + (Other Base Categories) -> Calculate Final Overall
+
+echo ""
+echo "Calculating Weighted Aggregated Scores..."
+
+# Use a temporary file to store the calculated results to avoid reading/writing the same file simultaneously
+TEMP_CALC_FILE="$OUTPUT_DIR/temp_calc_results.csv"
+
+awk -F, '
+BEGIN {
+    # Define which categories belong to the "Complex" group
+    is_complex["complex"] = 1
+    is_complex["complex action"] = 1
+    is_complex["complex spatial"] = 1
+}
+NR > 1 {
+    variant = $1
+    category = $2
+    score = $3
+
+    # Skip empty lines or header repetitions if any
+    if (variant == "" || variant == "Variant" || category == "") next;
+
+    if (category in is_complex) {
+        # Accumulate complex scores
+        sum_complex[variant] += score
+        count_complex[variant]++
+    } else {
+        # Accumulate base scores (color, shape, etc.)
+        sum_base[variant] += score
+        count_base[variant]++
+    }
+    # Mark variant as seen
+    variants[variant] = 1
+}
+END {
+    for (v in variants) {
+        # 1. Calculate average for the Complex group
+        avg_complex_group = 0
+        if (count_complex[v] > 0) {
+            avg_complex_group = sum_complex[v] / count_complex[v]
+        }
+
+        # 2. Calculate Final Overall
+        # The components are: All Base Items + 1 Composite Complex Item
+        total_sum = sum_base[v] + avg_complex_group
+        total_count = count_base[v] + 1
+        
+        final_overall = 0
+        if (total_count > 0) {
+            final_overall = total_sum / total_count
+        }
+
+        # Print results in CSV format
+        # Format: Variant, Category, Mean_Score
+        printf "%s,Complex_Composite,%.4f\n", v, avg_complex_group
+        printf "%s,Overall_Weighted,%.4f\n", v, final_overall
+    }
+}
+' "$SUMMARY_CSV" > "$TEMP_CALC_FILE"
+
+# Append the calculated results to the main summary file
+if [ -s "$TEMP_CALC_FILE" ]; then
+    cat "$TEMP_CALC_FILE" >> "$SUMMARY_CSV"
+    echo "Weighted scores appended to $SUMMARY_CSV"
+    
+    # Display the results to the console for immediate feedback
+    echo ""
+    echo "================ RESULTS SUMMARY ================"
+    cat "$TEMP_CALC_FILE" | awk -F, '{printf "Variant: %-10s | %-20s: %s\n", $1, $2, $3}'
+    echo "================================================="
+else
+    echo "Warning: Calculation produced no output."
+fi
+
+# Clean up temp file
+rm -f "$TEMP_CALC_FILE"
 
 # Record the end time and calculate the total duration
 END_TIME=$(date +%s)
