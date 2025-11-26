@@ -104,7 +104,7 @@ wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.0.post2
 pip install flash_attn-2.7.0.post2+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 ```
 
-Or you can follow the settings of Bagel
+Or you can follow the settings of BAGEL
 
 2️⃣  Download Bagel pretrained or our SRUM checkpoint
 ```python
